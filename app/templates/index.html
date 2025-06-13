@@ -10,6 +10,13 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Styles for disabled button state */
+        .bg-blue-300 {
+            background-color: #93c5fd; /* Light blue for disabled */
+        }
+        .cursor-not-allowed {
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-800 to-purple-900 min-h-screen flex items-center justify-center p-4">
@@ -53,8 +60,35 @@
         const pingTime = document.getElementById('ping_time');
         const statusMessage = document.getElementById('status_message');
 
-        let isTesting = false; // Local state to mirror server's is_testing
+        let intervalId = null; // Variable to hold the polling interval ID
 
+        // Function to update the UI with fetched data
+        function updateUI(data) {
+            downloadSpeed.textContent = `${data.download} Mbps`;
+            uploadSpeed.textContent = `${data.upload} Mbps`;
+            pingTime.textContent = `${data.ping} ms`;
+            statusMessage.textContent = data.status;
+
+            // Update button state based on the server's `is_testing` status
+            if (data.is_testing) {
+                startTestBtn.disabled = true;
+                startTestBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                startTestBtn.classList.add('bg-blue-300', 'cursor-not-allowed');
+            } else {
+                startTestBtn.disabled = false;
+                startTestBtn.classList.remove('bg-blue-300', 'cursor-not-allowed');
+                startTestBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+
+                // If testing is NOT in progress and we *were* polling, stop polling
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                    console.log('Polling stopped: Test completed or errored.');
+                }
+            }
+        }
+
+        // Function to fetch status from the backend
         async function fetchStatus() {
             try {
                 const response = await fetch('/status');
@@ -62,61 +96,80 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                
-                downloadSpeed.textContent = `${data.download} Mbps`;
-                uploadSpeed.textContent = `${data.upload} Mbps`;
-                pingTime.textContent = `${data.ping} ms`;
-                statusMessage.textContent = data.status;
-                isTesting = data.is_testing;
-
-                // Disable/enable start button based on testing status
-                startTestBtn.disabled = isTesting;
-                if (isTesting) {
-                    startTestBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    startTestBtn.classList.add('bg-blue-300', 'cursor-not-allowed');
-                } else {
-                    startTestBtn.classList.remove('bg-blue-300', 'cursor-not-allowed');
-                    startTestBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                }
-
+                updateUI(data);
             } catch (error) {
                 console.error('Error fetching status:', error);
-                statusMessage.textContent = `Error: ${error.message}`;
+                statusMessage.textContent = `Error: Could not connect to server (${error.message}).`;
+                // Stop polling if there's a connection error
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+                startTestBtn.disabled = false; // Allow user to try again
+                startTestBtn.classList.remove('bg-blue-300', 'cursor-not-allowed');
+                startTestBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             }
         }
 
+        // Function to start the test
         async function runTest() {
-            if (isTesting) {
-                console.warn('Test already in progress.');
-                return;
-            }
             // Optimistically update UI to show "Starting test..." immediately
             statusMessage.textContent = 'Starting test...';
             startTestBtn.disabled = true;
             startTestBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
             startTestBtn.classList.add('bg-blue-300', 'cursor-not-allowed');
-            isTesting = true;
-
 
             try {
                 const response = await fetch('/run_test', { method: 'POST' });
                 const data = await response.json();
+
                 if (!response.ok) {
                     throw new Error(data.message || `HTTP error! status: ${response.status}`);
                 }
+
                 console.log(data.message);
-                // Status will be updated by the polling mechanism
+                // If the test successfully started, begin polling
+                if (data.success) {
+                    if (intervalId) { // Clear any previous interval if it exists
+                        clearInterval(intervalId);
+                    }
+                    intervalId = setInterval(fetchStatus, 2000); // Start polling every 2 seconds
+                    console.log('Polling started: Test initiated.');
+                } else {
+                    // Test didn't start (e.g., already in progress on server side)
+                    statusMessage.textContent = data.message;
+                    startTestBtn.disabled = false; // Re-enable button
+                    startTestBtn.classList.remove('bg-blue-300', 'cursor-not-allowed');
+                    startTestBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }
             } catch (error) {
-                console.error('Error starting test:', error);
-                statusMessage.textContent = `Error starting test: ${error.message}`;
-                isTesting = false; // Allow retrying if test couldn't even start
+                console.error('Error initiating test:', error);
+                statusMessage.textContent = `Error initiating test: ${error.message}`;
                 startTestBtn.disabled = false;
                 startTestBtn.classList.remove('bg-blue-300', 'cursor-not-allowed');
                 startTestBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             }
         }
 
+        // Function to reset results
         async function resetResults() {
+            // Stop polling immediately when reset is clicked
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+                console.log('Polling stopped: Reset initiated.');
+            }
+
+            // Optimistically reset UI
+            downloadSpeed.textContent = 'N/A';
+            uploadSpeed.textContent = 'N/A';
+            pingTime.textContent = 'N/A';
+            statusMessage.textContent = 'Resetting...';
+            startTestBtn.disabled = false; // Re-enable button
+            startTestBtn.classList.remove('bg-blue-300', 'cursor-not-allowed');
+            startTestBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+
+
             try {
                 const response = await fetch('/reset', { method: 'POST' });
                 if (!response.ok) {
@@ -124,19 +177,19 @@
                 }
                 const data = await response.json();
                 console.log(data.message);
-                fetchStatus(); // Update UI immediately after reset
+                fetchStatus(); // Fetch status to get the "Ready to start test" message from server
             } catch (error) {
                 console.error('Error resetting results:', error);
                 statusMessage.textContent = `Error resetting: ${error.message}`;
             }
         }
 
+        // Event Listeners for buttons
         startTestBtn.addEventListener('click', runTest);
         resetBtn.addEventListener('click', resetResults);
 
-        // Initial fetch and then poll every 2 seconds
+        // Initial fetch to populate the UI when the page loads
         fetchStatus();
-        setInterval(fetchStatus, 2000); // Poll every 2 seconds
     </script>
 </body>
 </html>
