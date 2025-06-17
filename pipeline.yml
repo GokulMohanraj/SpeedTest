@@ -5,7 +5,7 @@ trigger:
 
 # Corrected indentation for 'stages'
 stages: # <--- This is now at Column 1, which is correct 
-  - stages:
+  - stage:
     displayName: 'Update ubuntu-latest image'
     jobs:
       - job: update_image
@@ -18,9 +18,9 @@ stages: # <--- This is now at Column 1, which is correct
               sudo apt-get update
               sudo apt-get upgrade -y
             displayName: 'Update Ubuntu Image' # This displayName applies to the script task
-  - stages:
+  - stage:
     displayName: 'Install Docker on Agent'
-    dependsOn: UpdateImage # Optional: Make this stage depend on the previous one
+    #dependsOn: UpdateImage # Optional: Make this stage depend on the previous one
     jobs:
       - job: install_docker
         displayName: 'Install Docker'
