@@ -2,7 +2,7 @@ trigger:
   branches:
     include:
       - main
-
+pool: agent_for_speedtest
 # Corrected indentation for 'stages'
 stages: # <--- This is now at Column 1, which is correct 
   - stage:
