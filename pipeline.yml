@@ -1,0 +1,47 @@
+trigger:
+  branches:
+    include:
+      - main
+
+# Corrected indentation for 'stages'
+stages: # <--- This is now at Column 1, which is correct 
+  - stages:
+    displayName: 'Update ubuntu-latest image'
+    jobs:
+      - job: update_image
+        displayName: 'Update Image'
+        pool: # You need a pool defined for your jobs to run on an agent
+          vmImage: 'ubuntu-latest' # Or your self-hosted pool name
+        steps:
+          - script: |
+              echo "Updating ubuntu-latest image..."
+              sudo apt-get update
+              sudo apt-get upgrade -y
+            displayName: 'Update Ubuntu Image' # This displayName applies to the script task
+  - stages:
+    displayName: 'Install Docker on Agent'
+    dependsOn: UpdateImage # Optional: Make this stage depend on the previous one
+    jobs:
+      - job: install_docker
+        displayName: 'Install Docker'
+        pool: # Define the pool for this job too
+          vmImage: 'ubuntu-latest' # Or your self-hosted pool name
+        steps:
+          - script: |
+              echo "Installing Docker..."
+              sudo apt-get update
+              sudo apt-get install -y ca-certificates curl gnupg
+              sudo install -m 0755 -d /etc/apt/keyrings
+              sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+              sudo chmod a+r /etc/apt/keyrings/docker.asc
+              # Add the repository to Apt sources:
+              echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              $$(. /etc/os-release && echo "$${UBUNTU_CODENAME:-$$VERSION_CODENAME}") stable" | \
+              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              sudo apt-get update
+              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              # Note: `sudo usermod -aG docker ubuntu` will not affect the current pipeline run on a Microsoft-hosted agent
+              # This user change would require a new session (or agent restart) to take effect.
+              # If installing Docker on a *self-hosted agent*, you'd need to restart the agent service after this.
+            displayName: 'Install Docker'
