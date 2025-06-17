@@ -1,0 +1,42 @@
+triggers:
+  branches:
+    include:
+      - main
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    stages:
+      - stage:
+        displayName: 'Update ubuntu-latest image'
+        jobs:
+          - job: update_image
+            displayName: 'Update Image'
+            steps:
+              - script: |
+                  echo "Updating ubuntu-latest image..."
+                  sudo apt-get update
+                  sudo apt-get upgrade -y
+                displayName: 'Update Ubuntu Image'
+      - stage:
+        jobs:
+          - job: install_docker
+            displayName: 'Install Docker'
+            steps:
+              - script: |
+                  echo "Installing Docker..."
+                  sudo apt-get update
+                  sudo apt-get install ca-certificates curl
+                  sudo install -m 0755 -d /etc/apt/keyrings
+                  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+                  sudo chmod a+r /etc/apt/keyrings/docker.asc
+                  # Add the repository to Apt sources:
+                  echo \
+                  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+                  $$(. /etc/os-release && echo "$${UBUNTU_CODENAME:-$$VERSION_CODENAME}") stable" | \
+                  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                  sudo apt-get update
+                  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                  sudo usermod -aG docker ubuntu
+
+                displayName: 'Install Docker'
