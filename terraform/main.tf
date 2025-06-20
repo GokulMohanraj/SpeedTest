@@ -67,40 +67,6 @@ resource "aws_instance" "speedtest" {
   instance_type = var.instance_type
   key_name      = aws_key_pair.speedtest_key.key_name
   security_groups = [aws_security_group.speedtest_sg.name]
-
-  user_data = <<-EOF
-              #!/bin/bash
-              # Update the instance
-              sudo apt-get update -y
-              sudo apt-get upgrade -y
-              
-              # Uninstall any existing docker installations
-              for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
-
-              # Install Docker
-              # Add Docker's official GPG key:
-                sudo apt-get update
-                sudo apt-get install ca-certificates curl
-                sudo install -m 0755 -d /etc/apt/keyrings
-                sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-                sudo chmod a+r /etc/apt/keyrings/docker.asc
-              
-              # Add the repository to Apt sources:
-                echo \
-                "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-                $$(. /etc/os-release && echo "$${UBUNTU_CODENAME:-$$VERSION_CODENAME}") stable" | \
-                sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                sudo apt-get update
-
-              # Install Docker Engine, Docker CLI, and Containerd:
-                sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-              # Add the current user to the docker group (optional, but good for direct docker commands)
-                sudo usermod -aG docker ubuntu
-
-              EOF
-
-
   tags = {
     Name = "Speedtest-Instance"
   }
@@ -119,4 +85,14 @@ data "aws_ami" "ubuntu" {
     values = ["hvm"]
   }
   owners      = ["099720109477"] # Canonical's official Ubuntu AMI owner ID
+}
+
+terraform {
+  backend "s3" {
+    bucket         = "bucket-for-speedtest" # Must exist
+    key            = "terraform/terraform.tfstate"
+    region         = "ap-south-1"
+    encrypt        = true
+    dynamodb_table = "terraform-state-table" # Must exist in AWS
+  }
 }
