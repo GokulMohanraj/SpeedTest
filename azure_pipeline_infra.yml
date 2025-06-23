@@ -7,7 +7,7 @@ trigger:
       - terraform/*
 
 pool:
-  name: Agent
+  name: Agent pool
 
 variables:
   awsServiceConnection: 'AWS_Access_Key'
