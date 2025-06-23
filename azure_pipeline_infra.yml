@@ -26,11 +26,11 @@ stages:
     - checkout: self
 
     # Step 1: Configure AWS CLI using the Service Connection (secure & recommended)
-    - task: UseAWSCLI@1
-      displayName: 'Configure AWS CLI Credentials'
-      inputs:
-        awsCredentials: '$(awsServiceConnection)' # References the Service Connection
-        regionName: '$(awsRegion)'
+#    - task: UseAWSCLI@1
+#      displayName: 'Configure AWS CLI Credentials'
+#      inputs:
+#        awsCredentials: '$(awsServiceConnection)' # References the Service Connection
+#        regionName: '$(awsRegion)'
 
     # Step 2: Install Terraform (if not pre-installed on your self-hosted agent)
     # Use the official TerraformInstaller task. It handles installation gracefully.
