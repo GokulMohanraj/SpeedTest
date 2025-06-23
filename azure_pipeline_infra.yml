@@ -75,12 +75,10 @@ stages:
 - stage: TerraformDestroy
   displayName: 'Terraform Destroy'
   # Condition to run this stage:
-  # Option A: Manual only (most common and safest)
-  # condition: |
-  #   and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
-  # Option B: Run only if a specific variable is set (e.g., when queuing the pipeline manually)
+  # This stage runs only if the 'DestroyResources' variable is explicitly set to 'true' when queuing the pipeline.
+  # This provides a manual control mechanism for destructive operations.
   condition: |
-    and(succeeded(), eq(variables['DestroyResources'], 'true')) # Set DestroyResources to 'true' when queuing pipeline
+    and(succeeded(), eq(variables['DestroyResources'], 'true'))
   
   jobs:
   - job: DestroyInfra
@@ -90,10 +88,10 @@ stages:
 
     # Step 1: Configure AWS CLI (essential for destroy as well)
 #    - task: UseAWSCLI@1
-#     displayName: 'Configure AWS CLI Credentials'
-#     inputs:
-#       awsCredentials: '$(awsServiceConnection)'
-#       regionName: '$(awsRegion)'
+#      displayName: 'Configure AWS CLI Credentials'
+#      inputs:
+#        awsCredentials: '$(awsServiceConnection)'
+#        regionName: '$(awsRegion)'
 
     # Step 2: Install Terraform
     - task: TerraformInstaller@0
