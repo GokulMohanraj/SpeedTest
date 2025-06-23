@@ -61,13 +61,7 @@ stages:
       displayName: 'Terraform Plan'
       workingDirectory: '$(terraformDirectory)'
 
-    # Step 5: (Optional but Recommended) Publish the Plan as an Artifact
-    # This is useful for auditing and ensuring what was planned is what gets applied.
-    - publish: $(terraformDirectory)/tfplan.out
-      artifact: TerraformPlanArtifact
-      displayName: 'Publish Terraform Plan Artifact'
-
-    # Step 6: Apply Terraform Changes
+    # Step 5: Apply Terraform Changes
     # You might want to split Plan and Apply into separate stages with an approval gate in between
     # for production environments. For now, they are in the same job for simplicity.
     - script: |
@@ -78,14 +72,58 @@ stages:
       displayName: 'Terraform Apply'
       workingDirectory: '$(terraformDirectory)'
 
-    # Step 7: (Optional) Get and Publish Terraform Outputs
-    # Useful if your application pipeline needs details like EC2 IP from Terraform.
+- stage: TerraformDestroy
+  displayName: 'Terraform Destroy'
+  # Condition to run this stage:
+  # Option A: Manual only (most common and safest)
+  # condition: |
+  #   and(succeeded(), eq(variables['Build.Reason'], 'Manual'))
+  # Option B: Run only if a specific variable is set (e.g., when queuing the pipeline manually)
+  condition: |
+    and(succeeded(), eq(variables['DestroyResources'], 'true')) # Set DestroyResources to 'true' when queuing pipeline
+  
+  jobs:
+  - job: DestroyInfra
+    displayName: 'Destroy Infrastructure'
+    steps:
+    - checkout: self
+
+    # Step 1: Configure AWS CLI (essential for destroy as well)
+#    - task: UseAWSCLI@1
+#     displayName: 'Configure AWS CLI Credentials'
+#     inputs:
+#       awsCredentials: '$(awsServiceConnection)'
+#       regionName: '$(awsRegion)'
+
+    # Step 2: Install Terraform
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    # Navigate to the directory containing your Terraform files
     - script: |
-        echo "--- Capturing Terraform Outputs ---"
-        terraform output -json > tf_outputs.json
-        cat tf_outputs.json
-      displayName: 'Get Terraform Outputs'
+        echo "Navigating to Terraform directory: $(terraformDirectory)"
+        cd $(terraformDirectory)
+        
+        # Step 3: Initialize Terraform (must initialize to read state from S3 backend)
+        echo "--- Initializing Terraform for Destroy ---"
+        terraform init -upgrade
+      displayName: 'Terraform Init for Destroy'
       workingDirectory: '$(terraformDirectory)'
-    - publish: $(terraformDirectory)/tf_outputs.json
-      artifact: TerraformOutputs
-      displayName: 'Publish Terraform Outputs Artifact'
+
+    # Step 4: Generate Terraform Destroy Plan (Optional but Recommended)
+    # This shows what will be destroyed before actually doing it.
+    - script: |
+        echo "--- Generating Terraform Destroy Plan ---"
+        terraform plan -destroy -out=tfdestroy.out
+      displayName: 'Terraform Destroy Plan'
+      workingDirectory: '$(terraformDirectory)'
+
+    # Step 5: Apply Terraform Destroy
+    # Use -auto-approve for automation. For production, add approval gates.
+    - script: |
+        echo "--- Applying Terraform Destroy ---"
+        terraform apply -destroy -auto-approve tfdestroy.out
+      displayName: 'Terraform Destroy'
+      workingDirectory: '$(terraformDirectory)'
