@@ -7,7 +7,7 @@ trigger:
       - terraform/*
 
 pool:
-  name: agent_for_speedtest
+  name: Agent
 
 variables:
   awsServiceConnection: 'AWS_Access_Key'
