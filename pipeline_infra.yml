@@ -7,7 +7,7 @@ trigger:
     include:
       - terraform/*
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'
 
 variables:
   awsServiceConnection: 'AWS_Access_Key'
