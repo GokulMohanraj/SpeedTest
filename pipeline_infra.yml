@@ -1,0 +1,139 @@
+name: InfraPipeline_$(Date:yyyyMMdd)$(Rev:rr)
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/*
+pool:
+  name: Agent pool
+
+variables:
+  awsServiceConnection: 'AWS_Access_Key'
+  awsRegion: 'ap-south-1'
+  terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  terraformStateBucket: "bucket-for-speedtest"
+  terraformStateKey: "terraform/terraform.tfstate"
+
+stages:
+- stage: TerraformPlan
+  displayName: 'TerraformPlan'
+  jobs:
+  - job: PlanInfra
+    displayName: 'Generate Terraform Plan'
+    steps:
+    - checkout: self
+    
+    # step 1: Configure AWS CLI using the service connection
+    - task: UseAWSCLI@1
+      displayName: 'Configure AWS CLI Credentials'
+      inputs:
+        awsCredentials: '$(awsServiceConnection)'
+        region: '$(awsRegion)'
+    
+    # step 2: Install Terraform (if not pre-installed on your self-hosted agent)
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    # step 3: Navigate to the directory containing terraform code and Initialize Terraform
+
+    - script: |
+        echo "Navigate to terraform directory: $(terraformDirectory)"
+        cd $(terraformDirectory)
+
+        echo "--- Initialize Terraform ---"
+        terraform init - upgrade
+      displayName: 'Terraform Init'
+      workingDirectory: '$(terraformDirectory)'
+
+    # Step 4: Generate Terraform plan
+    - script: |
+        echo "--- Generating Terraform Plan ---"
+        terraform plan -out=tfplan.out
+      displayName: 'Terraform Plan'
+      workingDirectory: '$(terraformDirectory)'
+
+    # Step 5: Publish the Terraform plan as an artifact
+    - task: publishArtifact@1
+      displayName: 'Publish Terraform plan artifacts'
+      inputs:
+        targetPath: '$(terraformDirectory)/tfplan.out'
+        artifact: 'TerraformPlan'
+        publishLocation: 'pipeline'
+
+- stage: TerraformApply
+  displayName: 'TerraformApply'
+  dependsOn: TerraformPlan
+  condition: and (succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+  jobs:
+  - job: ApplyInfra
+    displayName: 'Apply Terraform Plan'
+    steps:
+    - task: downloadPipelineArtifact@2
+      displayName: 'Download Terraform Plan Artifact'
+      inputs:
+        source: 'current'
+        artifact: 'TerraformPlan'
+        path: '$(Pipeline.Workspace)/TerraformPlan'
+
+    - task: UseAWSCLI@1
+      displayName: 'Configure AWS CLI Credentials'
+      inputs:
+        awsCredentials: '$(awsServiceConnection)'
+        region: '$(awsRegion)'
+
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - script: |
+        echo "Navigating to Terraform directory: $(terraformDirectory)"
+        cd $(terraformDirectory)
+
+        echo "--- Initializing Terraform ---"
+        terraform init -upgrade
+      displayName: 'Terraform Init'
+      workingDirectory: '$(terraformDirectory)'
+
+    - script: |
+        echo "--- Applying Terraform Changes ---"
+        terraform apply -auto-approve "$(Pipeline.Workspace)/TerraformPlan/tfplan.out"
+      displayName: 'Terraform Apply'
+      workingDirectory: '$(terraformDirectory)'
+
+- stage: TerraformDestroy
+  displayName: 'Terraform Destroy'
+  condition: and(succeeded(), eq(variables['DestroyResources'], 'true'))
+  jobs:
+  - job: DestroyInfra
+    displayName: 'Destroy Infrastructure'
+    steps:
+    - checkout: self
+
+    - task: UseAWSCLI@1
+      displayName: 'Configure AWS CLI Credentials'
+      inputs:
+        awsCredentials: '$(awsServiceConnection)'
+        region: '$(awsRegion)'
+
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - script: |
+        echo "--- Initializing Terraform for Destroy ---"
+        terraform init -upgrade
+      displayName: 'Terraform Init for Destroy'
+      workingDirectory: '$(terraformDirectory)'
+
+    - script: |
+        echo "--- Applying Terraform Destroy ---"
+        terraform destroy -auto-approve
+      displayName: 'Terraform Destroy'
+      workingDirectory: '$(terraformDirectory)'
