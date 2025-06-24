@@ -7,7 +7,7 @@ trigger:
     include:
       - terraform/*
 pool:
-  vmImage: 'windows-latest'
+  name: 'Agent pool'
 
 variables:
   awsServiceConnection: 'AWS_Access_Key'
@@ -15,6 +15,7 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
+  destroyResources: 'false' # Set to 'true' to enable resource destruction stage
 
 stages:
 - stage: TerraformPlan
@@ -25,20 +26,13 @@ stages:
     steps:
     - checkout: self
     
-    # step 1: Configure AWS CLI using the service connection
-    - task: UseAWSCLI@1
-      displayName: 'Configure AWS CLI Credentials'
-      inputs:
-        awsCredentials: '$(awsServiceConnection)'
-        region: '$(awsRegion)'
-    
-    # step 2: Install Terraform (if not pre-installed on your self-hosted agent)
+    # step 1: Install Terraform (if not pre-installed on your self-hosted agent)
     - task: TerraformInstaller@0
       displayName: 'Install Terraform'
       inputs:
         terraformVersion: 'latest'
 
-    # step 3: Navigate to the directory containing terraform code and Initialize Terraform
+    # step 2: Navigate to the directory containing terraform code and Initialize Terraform
 
     - script: |
         echo "Navigate to terraform directory: $(terraformDirectory)"
@@ -49,20 +43,12 @@ stages:
       displayName: 'Terraform Init'
       workingDirectory: '$(terraformDirectory)'
 
-    # Step 4: Generate Terraform plan
+    # Step 3: Generate Terraform plan
     - script: |
         echo "--- Generating Terraform Plan ---"
         terraform plan -out=tfplan.out
       displayName: 'Terraform Plan'
       workingDirectory: '$(terraformDirectory)'
-
-    # Step 5: Publish the Terraform plan as an artifact
-    - task: publishArtifact@1
-      displayName: 'Publish Terraform plan artifacts'
-      inputs:
-        targetPath: '$(terraformDirectory)/tfplan.out'
-        artifact: 'TerraformPlan'
-        publishLocation: 'pipeline'
 
 - stage: TerraformApply
   displayName: 'TerraformApply'
@@ -73,18 +59,6 @@ stages:
   - job: ApplyInfra
     displayName: 'Apply Terraform Plan'
     steps:
-    - task: downloadPipelineArtifact@2
-      displayName: 'Download Terraform Plan Artifact'
-      inputs:
-        source: 'current'
-        artifact: 'TerraformPlan'
-        path: '$(Pipeline.Workspace)/TerraformPlan'
-
-    - task: UseAWSCLI@1
-      displayName: 'Configure AWS CLI Credentials'
-      inputs:
-        awsCredentials: '$(awsServiceConnection)'
-        region: '$(awsRegion)'
 
     - task: TerraformInstaller@0
       displayName: 'Install Terraform'
@@ -102,7 +76,7 @@ stages:
 
     - script: |
         echo "--- Applying Terraform Changes ---"
-        terraform apply -auto-approve "$(Pipeline.Workspace)/TerraformPlan/tfplan.out"
+        terraform apply -auto-approve 
       displayName: 'Terraform Apply'
       workingDirectory: '$(terraformDirectory)'
 
@@ -114,12 +88,6 @@ stages:
     displayName: 'Destroy Infrastructure'
     steps:
     - checkout: self
-
-    - task: UseAWSCLI@1
-      displayName: 'Configure AWS CLI Credentials'
-      inputs:
-        awsCredentials: '$(awsServiceConnection)'
-        region: '$(awsRegion)'
 
     - task: TerraformInstaller@0
       displayName: 'Install Terraform'
