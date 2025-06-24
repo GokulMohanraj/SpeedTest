@@ -39,7 +39,7 @@ stages:
         cd $(terraformDirectory)
 
         echo "--- Initialize Terraform ---"
-        terraform init - upgrade
+        terraform init 
       displayName: 'Terraform Init'
       workingDirectory: '$(terraformDirectory)'
 
