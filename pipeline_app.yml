@@ -32,7 +32,7 @@ stages:
     - script: |
         echo "Installing Docker..."
         # Assuming the agent has Docker pre-installed, otherwise you can use a task to install it
-        sudo apt install gnome-terminal
+        sudo apt install gnome-terminal -y
         sudo apt-get install ./docker-desktop-amd64.deb
         systemctl --user start docker-desktop
         systemctl --user enable docker-desktop
