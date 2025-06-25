@@ -32,7 +32,7 @@ stages:
     - script: |
         # Script copy from official Docker documentation
         # https://docs.docker.com/engine/install/ubuntu/
-        
+
         echo "Installing Docker..."
         
         sudo apt-get update
@@ -58,8 +58,6 @@ stages:
         sudo docker run hello-world
 
       displayName: 'Install Docker'
-      inputs:
-        dockerVersion: 'latest'
   
   - job: BuildDockerImage
     displayName: 'Build Docker Image'
