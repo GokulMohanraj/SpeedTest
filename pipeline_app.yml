@@ -14,7 +14,7 @@ pool:
   name: 'Agent pool'  
 
 variables:
-  awsServiceConnection: 'AWS_Access_Key'
+  DockerConnection: 'DockerHubConnection'
   awsRegion: 'ap-south-1'   
   appDirectory: '$(System.DefaultWorkingDirectory)/app'
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
@@ -33,13 +33,16 @@ stages:
     - script: |
         echo "Building Docker image..."
       displayName: 'Preparation step'
-    - script: |
-        echo "Building and pushing Docker image: ${Docker_repo}:${Build_tag}"
-        echo "Also pushing to ${Docker_repo}:latest"
-        cd $(appDirectory)
-        sudo docker build -t ${Docker_repo}:${Build_tag} .
-        sudo docker push ${Docker_repo}:${Build_tag}
-        sudo docker tag ${Docker_repo}:${Build_tag} ${Docker_repo}:latest
-        sudo docker push ${Docker_repo}:latest
+    - task: Docker@2
+      inputs:
+        containerRegistry: '$(DockerConnection)'
+        repository: '$(Docker_repo)'
+        command: 'buildAndPush'
+        Dockerfile: '$(appDirectory)/Dockerfile'
+        tags: |
+          latest
+          $(Build_tag)
       displayName: 'Docker Build'
       workingDirectory: '$(appDirectory)'
+      buildContext: '$(appDirectory)'
+      
