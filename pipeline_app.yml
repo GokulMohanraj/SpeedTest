@@ -43,6 +43,5 @@ stages:
           latest
           $(Build_tag)
       displayName: 'Docker Build'
-      workingDirectory: '$(appDirectory)'
-      buildContext: '$(appDirectory)'
-      
+
+
