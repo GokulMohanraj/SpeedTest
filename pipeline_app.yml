@@ -24,24 +24,9 @@ variables:
 stages:
 - stage: DockerBuild
   displayName: 'Docker Build Stage'
-  jobs:
-  - job: InstallDocker
-    displayName: 'Install Docker'
-    steps:
-    - checkout: self
-    - script: |
-        echo "Installing Docker..."
-        # Assuming the agent has Docker pre-installed, otherwise you can use a task to install it
-        sudo apt install gnome-terminal -y
-        sudo apt-get install ./docker-desktop-amd64.deb
-        systemctl --user start docker-desktop
-        systemctl --user enable docker-desktop
-
-      displayName: 'Install Docker'
-  
+  jobs:  
   - job: BuildDockerImage
     displayName: 'Build Docker Image'
-    dependsOn: InstallDocker
     steps:
     - script: |
         echo "Building Docker image..."
