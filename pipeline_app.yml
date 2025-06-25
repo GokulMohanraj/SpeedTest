@@ -37,6 +37,9 @@ stages:
         echo "Building and pushing Docker image: ${Docker_repo}:${Build_tag}"
         echo "Also pushing to ${Docker_repo}:latest"
         cd $(appDirectory)
+        echo "DEBUG: Value of DOCKER_REPO: '${DOCKER_REPO}'"
+        echo "DEBUG: Value of BUILD_TAG: '${BUILD_TAG}'"
+        echo "DEBUG: Value of Build.BuildId directly: '$(Build.BuildId)'"
         sudo docker build -t ${Docker_repo}:${Build_tag} .
         sudo docker push ${Docker_repo}:${Build_tag}
         sudo docker tag ${Docker_repo}:${Build_tag} ${Docker_repo}:latest
