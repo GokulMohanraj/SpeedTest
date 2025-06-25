@@ -33,6 +33,6 @@ stages:
       displayName: 'Build step'
     - script: |
         cd $(appDirectory)
-        docker build -t myapp:latest .
+        sudo docker build -t myapp:latest .
       displayName: 'Docker Build'
       workingDirectory: '$(appDirectory)'
