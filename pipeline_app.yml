@@ -45,4 +45,4 @@ stages:
         cd $(appDirectory)
         docker build -t myapp:latest .
       displayName: 'Docker Build'
-    workingDirectory: '$(appDirectory)'
+      workingDirectory: '$(appDirectory)'
