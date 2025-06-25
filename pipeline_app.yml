@@ -1,0 +1,48 @@
+# azure_pipelines_app.yml
+
+name: AppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - app/*
+
+pool:
+  name: 'Agent pool'  
+
+variables:
+  awsServiceConnection: 'AWS_Access_Key'
+  awsRegion: 'ap-south-1'   
+  appDirectory: '$(System.DefaultWorkingDirectory)/app'
+  terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  terraformStateBucket: "bucket-for-speedtest"
+  terraformStateKey: "terraform/terraform.tfstate"
+
+stages:
+- stage: DockerBuild
+  displayName: 'Docker Build Stage'
+  jobs:
+  - job: Install Docker
+    displayName: 'Install Docker'
+    steps:
+    - checkout: self
+    - task: DockerInstaller@0
+      displayName: 'Install Docker'
+      inputs:
+        dockerVersion: 'latest'
+  
+  - job: BuildDockerImage
+    displayName: 'Build Docker Image'
+    dependsOn: Install Docker
+    steps:
+    - script: |
+        echo "Building Docker image..."
+      displayName: 'Build step'
+    - script: |
+        cd $(appDirectory)
+        docker build -t myapp:latest .
+      displayName: 'Docker Build'
+    workingDirectory: '$(appDirectory)'
