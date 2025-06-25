@@ -34,5 +34,6 @@ stages:
     - script: |
         cd $(appDirectory)
         sudo docker build -t myapp:latest .
+        sudo docker push gokulmohanraj/myapp:latest
       displayName: 'Docker Build'
       workingDirectory: '$(appDirectory)'
