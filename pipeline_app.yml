@@ -20,7 +20,7 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
-  Docker_repo: 'gokulmohanraj/myapp'
+  Docker_repo: 'gokulmohanraj/speed_test_app'
   Build_tag: $(Build.BuildId)
 
 stages:
@@ -37,13 +37,6 @@ stages:
         echo "Building and pushing Docker image: ${Docker_repo}:${Build_tag}"
         echo "Also pushing to ${Docker_repo}:latest"
         cd $(appDirectory)
-        echo "DEBUG: Value of DOCKER_REPO: '${DOCKER_REPO}'"
-        echo "DEBUG: Value of BUILD_TAG: '${BUILD_TAG}'"
-        echo "DEBUG: Value of Build.BuildId directly: '$(Build.BuildId)'"
-         if [ -z "${BUILD_TAG}" ]; then
-          echo "ERROR: BUILD_TAG is empty! Aborting Docker build and push."
-          exit 1
-        fi
         sudo docker build -t ${Docker_repo}:${Build_tag} .
         sudo docker push ${Docker_repo}:${Build_tag}
         sudo docker tag ${Docker_repo}:${Build_tag} ${Docker_repo}:latest
