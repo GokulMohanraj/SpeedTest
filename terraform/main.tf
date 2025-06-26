@@ -2,24 +2,9 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Key Pair
-# Generate a new SSH key pair for EC2 access
-# This will save a private key file named "speedtest-key.pem" in your local directory.
-# KEEP THIS FILE SECURE!
-resource "tls_private_key" "rsa_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "speedtest_key" {
-  key_name   = var.key_name
-  public_key = tls_private_key.rsa_key.public_key_openssh
-}
-
-resource "local_file" "speedtest_private_key" {
-  content  = tls_private_key.rsa_key.private_key_pem
-  filename = "${var.key_name}.pem"
-  file_permission = "0400"
+# AWS Key Pair
+data "aws_key_pair" "existing_key" {
+  key_name = var.key_name
 }
 
 # Security Group
@@ -65,7 +50,7 @@ data "aws_vpc" "default" {
 resource "aws_instance" "speedtest" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
-  key_name      = aws_key_pair.speedtest_key.key_name
+  key_name      = data.aws_key_pair.existing_key.key_name
   security_groups = [aws_security_group.speedtest_sg.name]
   tags = {
     Name = "Speedtest-Instance"

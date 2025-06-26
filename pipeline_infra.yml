@@ -15,7 +15,7 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
-  destroyResources: 'true' # Set to 'true' to enable resource destruction stage
+  destroyResources: 'false' # Set to 'true' to enable resource destruction stage
 
 stages:
 - stage: TerraformPlan
@@ -79,6 +79,22 @@ stages:
         terraform apply -auto-approve 
       displayName: 'Terraform Apply'
       workingDirectory: '$(terraformDirectory)'
+
+    - script: |
+        echo "--- Capturing EC2 Instance IP Address ---"
+        cd $(terraformDirectory)
+        echo "Fetching EC2 instance IP address from Terraform output..."
+        EC2_IP=$(terraform output -raw public_ip)
+
+        echo "EC2 Instance IP Address: $EC2_IP"
+
+        mkdir -p $(Pipeline.Workspace)/ec2_connection_info
+        echo "$EC2_IP" > $(Pipeline.Workspace)/ec2_connection_info/connection_info.txt
+      displayName: 'Capture EC2 Instance IP Address'
+      workingDirectory: '$(terraformDirectory)'
+    - publish: $(Pipeline.Workspace)/ec2_connection_info
+      artifact: EC2ConnectionInfo
+      displayName: 'Publish EC2 Connection Info Artifact'
 
 - stage: TerraformDestroy
   displayName: 'Terraform Destroy'

@@ -44,4 +44,27 @@ stages:
           $(Build_tag)
       displayName: 'Docker Build'
 
+- stage: connect to speedtest-Instance
+  displayName: 'Connect to Speedtest Instance'
+  jobs:
+  - job: ConnectToSpeedtest
+    displayName: 'Connect to speedtest Instance'
+    steps:
+    - download: InfraPipeline
+      artifact: 'EC2ConnectionInfo'
+      displayName: 'Download EC2 Connection Info Artifact'
 
+    - task: DownloadSecureFile@1
+      name: 'sshkey' 
+      displayName: 'Download SSH Key'
+      inputs:
+        secureFile: 'ec2-ssh-key'
+
+    - script: |
+        # The artifact is downloaded to $(Pipeline.Workspace)/<artifact-alias>/<file-path>
+        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/InfraPipeline/ec2_public_ip.txt)
+
+        echo "Retrieved EC2 Public IP: $EC2_PUBLIC_IP"
+        
+        echo "##vso[task.setvariable variable=ec2HostResolved;]$EC2_PUBLIC_IP" 
+      displayName: 'Read EC2 IP from Artifact'

@@ -10,15 +10,15 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-variable "key_name" {
-  description = "The name of the SSH key pair to use for the EC2 instance"
-  type        = string
-  default     = "speedtest-key"
-}
-
 variable "security_group_name" {
   description = "The name of the security group to create"
   type        = string
   default     = "speedtest-sg" 
 }
 
+variable "key_name" {
+  description = "The name of the existing SSH key pair to use for the EC2 instance"
+  type        = string
+  default     = "speedtest_key"
+  
+}
