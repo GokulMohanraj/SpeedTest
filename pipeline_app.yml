@@ -99,7 +99,6 @@ stages:
   jobs:
   - job: GetInfo
     displayName: 'Retrieve IP and Port'
-    dependsOn: DeployApp
     variables:
       mappedEc2InstanceId: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2InstanceId'] ]
       mappedEc2PublicIp: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2PublicIp'] ]
