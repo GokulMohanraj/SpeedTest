@@ -54,7 +54,7 @@ stages:
 
     - script: |
         EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/InfraPipeline/ec2_connection_info/instance_id.txt)
-        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/InfraPipeline/ec2_connection_info/public_ip.txt)
+        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/InfraPipeline/ec2_connection_info/ip_info.txt)
 
         echo "Retrieved EC2 Instance ID: $EC2_INSTANCE_ID"
         echo "Retrieved EC2 Public IP: $EC2_PUBLIC_IP"
