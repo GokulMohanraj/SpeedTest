@@ -60,11 +60,6 @@ stages:
     displayName: 'Apply Terraform Plan'
     steps:
 
-    - task: TerraformInstaller@0
-      displayName: 'Install Terraform'
-      inputs:
-        terraformVersion: 'latest'
-
     - script: |
         echo "Navigating to Terraform directory: $(terraformDirectory)"
         cd $(terraformDirectory)
@@ -81,16 +76,19 @@ stages:
       workingDirectory: '$(terraformDirectory)'
 
     - script: |
-        echo "--- Capturing EC2 Instance IP Address ---"
+        echo "--- Capturing EC2 Instance ID & Public IP Address ---"
         cd $(terraformDirectory)
-        echo "Fetching EC2 instance IP address from Terraform output..."
+        echo "Fetching EC2 instance ID & Public IP address from Terraform output..."
         EC2_IP=$(terraform output -raw public_ip)
-
+        EC2_INSTANCE_ID=$(terraform output -raw instance_id)
         echo "EC2 Instance IP Address: $EC2_IP"
+        echo "EC2 Instance ID: $EC2_INSTANCE_ID"
 
         mkdir -p $(Pipeline.Workspace)/ec2_connection_info
-        echo "$EC2_IP" > $(Pipeline.Workspace)/ec2_connection_info/connection_info.txt
-      displayName: 'Capture EC2 Instance IP Address'
+        echo "$EC2_IP" > $(Pipeline.Workspace)/ec2_connection_info/ip_info.txt
+        echo "$EC2_INSTANCE_ID" > $(Pipeline.Workspace)/ec2_connection_info/instance_id.txt
+        echo "EC2 connection info saved to $(Pipeline.Workspace)/ec2_connection_info"
+      displayName: 'Capture EC2 Instance ID & Public IP Address'
       workingDirectory: '$(terraformDirectory)'
     - publish: $(Pipeline.Workspace)/ec2_connection_info
       artifact: EC2ConnectionInfo

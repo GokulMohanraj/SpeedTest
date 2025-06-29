@@ -3,7 +3,7 @@ output "public_ip" {
   value       = aws_instance.speedtest.public_ip
 }
 
-output "ssh_command" {
-  description = "SSH command to connect to the instance"
-  value       = "ssh -i ${var.key_name}.pem ubuntu@${aws_instance.speedtest.public_ip}"
+output "instance_id" {
+  description = "The ID of the instance"
+  value       = aws_instance.speedtest.id
 }
