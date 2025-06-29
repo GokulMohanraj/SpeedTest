@@ -59,16 +59,7 @@ stages:
   - job: ApplyInfra
     displayName: 'Apply Terraform Plan'
     steps:
-
-    - script: |
-        echo "Navigating to Terraform directory: $(terraformDirectory)"
-        cd $(terraformDirectory)
-
-        echo "--- Initializing Terraform ---"
-        terraform init
-      displayName: 'Terraform Init'
-      workingDirectory: '$(terraformDirectory)'
-
+    - checkout: self
     - script: |
         echo "--- Applying Terraform Changes ---"
         terraform apply -auto-approve 
