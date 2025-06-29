@@ -1,5 +1,15 @@
 name: AppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
 
+resources:
+  pipelines:
+    - pipeline: InfraPipeline                # Alias name used in download step
+      source: InfraPipeline                 # Name of your Infra pipeline
+      project: 'SpeedTest'   
+      trigger:
+        branches:
+          include:
+            - main
+
 trigger:
   branches:
     include:
@@ -49,12 +59,12 @@ stages:
     displayName: 'Deploy Application'
     steps:
     - download: InfraPipeline
-      artifact: 'EC2ConnectionInfo'
+      artifact: EC2ConnectionInfo
       displayName: 'Download EC2 Connection Info Artifact'
 
     - script: |
-        EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/InfraPipeline/ec2_connection_info/instance_id.txt)
-        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/InfraPipeline/ec2_connection_info/ip_info.txt)
+        EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/EC2ConnectionInfo/instance_id.txt)
+        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/EC2ConnectionInfo/ip_info.txt)
 
         echo "Retrieved EC2 Instance ID: $EC2_INSTANCE_ID"
         echo "Retrieved EC2 Public IP: $EC2_PUBLIC_IP"
