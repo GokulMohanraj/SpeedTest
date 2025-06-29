@@ -60,6 +60,20 @@ stages:
     displayName: 'Apply Terraform Plan'
     steps:
     - checkout: self
+    # --- ADDED: Install Terraform in this job too ---
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - script: |
+        echo "Navigating to Terraform directory: $(terraformDirectory)"
+        cd $(terraformDirectory)
+        echo "--- Initializing Terraform ---"
+        terraform init -upgrade
+      displayName: 'Terraform Init'
+      workingDirectory: '$(terraformDirectory)'
+      
     - script: |
         echo "--- Applying Terraform Changes ---"
         terraform apply -auto-approve 
