@@ -2,9 +2,8 @@ name: AppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
 
 resources:
   pipelines:
-    - pipeline: InfraPipeline                # Alias name used in download step
+    - pipeline: SpeedTest.Infra.Pipeline                # Alias name used in download step
       source: InfraPipeline                 # Name of your Infra pipeline
-      project: 'SpeedTest'   
       trigger:
         branches:
           include:
