@@ -116,11 +116,13 @@ stages:
       mappedEc2PublicIp: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2PublicIp'] ]
     steps:
     - script: |
-        echo "##vso[task.setvariable variable=appAccessUrl;]http://$(mappedEc2PublicIp):$(appPort)"
+        APP_URL="http://$(mappedEc2PublicIp):$(appPort)"
+        echo "##vso[task.setvariable variable=appAccessUrl;]$APP_URL"
+
         echo "--------------------------------------------------------"
         echo "Instance ID: $(mappedEc2InstanceId)"
         echo "IP Address: $(mappedEc2PublicIp)"
         echo "Port: $(appPort)"
-        echo "URL: $(appAccessUrl)"
+        echo "URL: $APP_URL"
         echo "--------------------------------------------------------"
       displayName: 'Display Application Access Details'
