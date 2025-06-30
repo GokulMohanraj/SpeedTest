@@ -14,8 +14,8 @@ resource "aws_security_group" "speedtest_sg" {
   vpc_id      = data.aws_vpc.default.id # Default VPC
   ingress {
     description = "Allow HTTP traffic from anywhere"
-    from_port   = 8000
-    to_port     = 8000
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }    
