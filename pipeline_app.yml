@@ -1,14 +1,5 @@
 name: AppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
 
-resources:
-  pipelines:
-    - pipeline: InfraPipeline                # Alias name used in download step
-      source: InfraPipeline                 # Name of your Infra pipeline
-      trigger:
-        branches:
-          include:
-            - main
-
 trigger:
   branches:
     include:
@@ -28,10 +19,15 @@ variables:
   Build_tag: $(Build.BuildId)
   ec2User: 'ubuntu'
   appPort: '80'
-  variables:
-  mappedEc2InstanceId: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2InstanceId'] ]
-  mappedEc2PublicIp: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2PublicIp'] ]
 
+resources:
+  pipelines:
+    - pipeline: InfraPipeline
+      source: InfraPipeline
+      trigger:
+        branches:
+          include:
+            - main
 
 stages:
 - stage: DockerBuild
@@ -40,9 +36,9 @@ stages:
   - job: BuildDockerImage
     displayName: 'Build Docker Image'
     steps:
-    - script: |
-        echo "Building Docker image..."
+    - script: echo "Building Docker image..."
       displayName: 'Preparation step'
+
     - task: Docker@2
       inputs:
         containerRegistry: '$(DockerConnection)'
@@ -66,15 +62,10 @@ stages:
       displayName: 'Download EC2 Connection Info Artifact'
 
     - script: |
-        echo "List contents of downloaded artifact:"
-        ls -lR $(Pipeline.Workspace)/EC2ConnectionInfo
-
-        EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/EC2ConnectionInfo/instance_id.txt)
-        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/EC2ConnectionInfo/ip_info.txt)
-
+        EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/InfraPipeline/EC2ConnectionInfo/instance_id.txt)
+        EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/InfraPipeline/EC2ConnectionInfo/ip_info.txt)
         echo "Retrieved EC2 Instance ID: $EC2_INSTANCE_ID"
         echo "Retrieved EC2 Public IP: $EC2_PUBLIC_IP"
-
         echo "##vso[task.setvariable variable=ec2InstanceId;isOutput=true;]$EC2_INSTANCE_ID"
         echo "##vso[task.setvariable variable=ec2PublicIp;isOutput=true;]$EC2_PUBLIC_IP"
       displayName: 'Read and Output EC2 Info'
@@ -82,36 +73,34 @@ stages:
 
     - script: |
         echo "Sending SSM command to EC2 instance..."
-    
         aws ssm send-command \
-        --region $(awsRegion) \
-        --document-name "AWS-RunShellScript" \
-        --instance-ids "$(mappedEc2InstanceId)" \
-        --comment "Install Docker and Deploy App" \
-        --parameters 'commands=[
-          "sudo apt-get update -y",
-          "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common",
-          "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg",
-          "sudo chmod a+r /etc/apt/keyrings/docker.gpg",
-          "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
-          "sudo apt-get update -y",
-          "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
-          "sudo systemctl start docker",
-          "sudo systemctl enable docker",
-          "sudo usermod -aG docker ubuntu",
-          "sleep 5",
-          "sudo docker pull $(Docker_repo):$(Build_tag)",
-          "sudo docker stop speedtest-app || true",
-          "sudo docker rm speedtest-app || true",
-          "sudo docker run -d --name speedtest-app -p 80:80 $(Docker_repo):$(Build_tag)"
+          --region $(awsRegion) \
+          --document-name "AWS-RunShellScript" \
+          --instance-ids "$(ec2InstanceId)" \
+          --comment "Install Docker and Deploy App" \
+          --parameters 'commands=[
+            "sudo apt-get update -y",
+            "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common",
+            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg",
+            "sudo chmod a+r /etc/apt/keyrings/docker.gpg",
+            "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
+            "sudo apt-get update -y",
+            "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
+            "sudo systemctl start docker",
+            "sudo systemctl enable docker",
+            "sudo usermod -aG docker ubuntu",
+            "sleep 5",
+            "sudo docker pull $(Docker_repo):$(Build_tag)",
+            "sudo docker stop speedtest-app || true",
+            "sudo docker rm speedtest-app || true",
+            "sudo docker run -d --name speedtest-app -p 80:80 $(Docker_repo):$(Build_tag)"
           ]' \
           --output text
       env:
-        AWS_ACCESS_KEY_ID: $(Access Key ID)
-        AWS_SECRET_ACCESS_KEY: $(Secret Access Key)
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
         AWS_DEFAULT_REGION: $(awsRegion)
       displayName: 'Install Docker and Deploy via AWS CLI Script'
-
 
 - stage: GetApplicationAccessInfo
   displayName: 'Get Application Access Information'
@@ -119,18 +108,16 @@ stages:
   jobs:
   - job: GetInfo
     displayName: 'Retrieve IP and Port'
+    variables:
+      mappedEc2InstanceId: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2InstanceId'] ]
+      mappedEc2PublicIp: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2PublicIp'] ]
     steps:
     - script: |
-        EC2_PUBLIC_IP=$(mappedEc2PublicIp)
-        APP_PORT=$(appPort)
-
-        echo "##vso[task.setvariable variable=appAccessUrl;]http://${EC2_PUBLIC_IP}:${APP_PORT}"
-
+        echo "##vso[task.setvariable variable=appAccessUrl;]http://$(mappedEc2PublicIp):$(appPort)"
         echo "--------------------------------------------------------"
-        echo "Your application should be accessible at:"
         echo "Instance ID: $(mappedEc2InstanceId)"
-        echo "IP Address: ${EC2_PUBLIC_IP}"
-        echo "Port: ${APP_PORT}"
+        echo "IP Address: $(mappedEc2PublicIp)"
+        echo "Port: $(appPort)"
         echo "URL: $(appAccessUrl)"
         echo "--------------------------------------------------------"
       displayName: 'Display Application Access Details'
