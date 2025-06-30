@@ -96,7 +96,7 @@ stages:
             "sudo docker pull $(Docker_repo):$(Build_tag)",
             "sudo docker stop speedtest-app || true",
             "sudo docker rm speedtest-app || true",
-            "sudo docker run -d --name speedtest-app -p 80:80 $(Docker_repo):$(Build_tag)"
+            "sudo docker run -d --name speedtest-app -p 80:5000 $(Docker_repo):$(Build_tag)"
           ]' \
           --output text
       env:
