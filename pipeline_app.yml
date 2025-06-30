@@ -76,18 +76,15 @@ stages:
       displayName: 'Read and Output EC2 Info'
       name: setEc2OutputVariables
 
-    - task: AWSCLI@1
-      displayName: 'Install Docker and Deploy App on EC2 (via SSM)'
-      inputs:
-        awsCredentials: 'AWS_Access_Key'
-        regionName: '$(awsRegion)'
-        awsCommand: 'ssm'
-        awsSubCommand: 'send-command'
-        awsArguments: >
-          --document-name "AWS-RunShellScript"
-          --instance-ids "$(ec2InstanceId)"
-          --comment "Install Docker and Deploy App"
-          --parameters commands='[
+    - script: |
+        echo "Sending SSM command to EC2 instance..."
+    
+        aws ssm send-command \
+        --region $(awsRegion) \
+        --document-name "AWS-RunShellScript" \
+        --instance-ids "$(ec2InstanceId)" \
+        --comment "Install Docker and Deploy App" \
+        --parameters 'commands=[
           "sudo apt-get update -y",
           "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common",
           "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg",
@@ -103,8 +100,13 @@ stages:
           "sudo docker stop speedtest-app || true",
           "sudo docker rm speedtest-app || true",
           "sudo docker run -d --name speedtest-app -p 80:80 $(Docker_repo):$(Build_tag)"
-          ]'
+          ]' \
           --output text
+    env:
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_DEFAULT_REGION: $(awsRegion)
+      displayName: 'Install Docker and Deploy via AWS CLI Script'
 
 
 - stage: GetApplicationAccessInfo
