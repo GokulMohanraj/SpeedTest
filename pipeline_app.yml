@@ -28,6 +28,10 @@ variables:
   Build_tag: $(Build.BuildId)
   ec2User: 'ubuntu'
   appPort: '80'
+  variables:
+  mappedEc2InstanceId: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2InstanceId'] ]
+  mappedEc2PublicIp: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2PublicIp'] ]
+
 
 stages:
 - stage: DockerBuild
@@ -82,7 +86,7 @@ stages:
         aws ssm send-command \
         --region $(awsRegion) \
         --document-name "AWS-RunShellScript" \
-        --instance-ids "$(ec2InstanceId)" \
+        --instance-ids "$(mappedEc2InstanceId)" \
         --comment "Install Docker and Deploy App" \
         --parameters 'commands=[
           "sudo apt-get update -y",
@@ -103,8 +107,8 @@ stages:
           ]' \
           --output text
       env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_ACCESS_KEY_ID: $(Access Key ID)
+        AWS_SECRET_ACCESS_KEY: $(Secret Access Key)
         AWS_DEFAULT_REGION: $(awsRegion)
       displayName: 'Install Docker and Deploy via AWS CLI Script'
 
@@ -115,9 +119,6 @@ stages:
   jobs:
   - job: GetInfo
     displayName: 'Retrieve IP and Port'
-    variables:
-      mappedEc2InstanceId: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2InstanceId'] ]
-      mappedEc2PublicIp: $[ stageDependencies.DeployToSpeedtestInstance.DeployApp.outputs['setEc2OutputVariables.ec2PublicIp'] ]
     steps:
     - script: |
         EC2_PUBLIC_IP=$(mappedEc2PublicIp)
