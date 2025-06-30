@@ -62,6 +62,9 @@ stages:
       displayName: 'Download EC2 Connection Info Artifact'
 
     - script: |
+        echo "List contents of downloaded artifact:"
+        ls -lR $(Pipeline.Workspace)/EC2ConnectionInfo
+
         EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/EC2ConnectionInfo/instance_id.txt)
         EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/EC2ConnectionInfo/ip_info.txt)
 
@@ -78,7 +81,7 @@ stages:
       inputs:
         awsCredentials: 'AWS_Access_Key'
         regionName: '$(awsRegion)'
-        command: |
+        awsCommand: >
           ssm send-command \
             --document-name "AWS-RunShellScript" \
             --instance-ids "$(ec2InstanceId)" \
