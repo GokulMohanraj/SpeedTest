@@ -102,10 +102,10 @@ stages:
           "sudo docker run -d --name speedtest-app -p 80:80 $(Docker_repo):$(Build_tag)"
           ]' \
           --output text
-    env:
-      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-      AWS_DEFAULT_REGION: $(awsRegion)
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(awsRegion)
       displayName: 'Install Docker and Deploy via AWS CLI Script'
 
 
