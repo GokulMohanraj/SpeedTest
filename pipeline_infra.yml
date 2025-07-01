@@ -15,7 +15,7 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
-  # destroyResources: 'false' # Set to 'true' to enable resource destruction stage
+  destroyResources: '' # Set to 'true' to enable resource destruction stage
 
 stages:
 
