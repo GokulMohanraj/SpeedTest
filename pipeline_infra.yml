@@ -15,13 +15,24 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
-  DestroyResources: 'false' # Set to 'true' to enable resource destruction stage
+  destroyResources: 'false' # Set to 'true' to enable resource destruction stage
 
 stages:
 
+- stage: Debug
+  displayName: '🔧 Debug Info'
+  jobs:
+    - job: Inspect
+      steps:
+        - script: |
+            echo "DestroyResources = '$(DestroyResources)'"
+            echo "Build.Reason = '$(Build.Reason)'"
+            echo "PreviousSkipped = $(dependencies.TerraformPlan.result)"
+          displayName: 'Print pipeline state'
+
 - stage: TerraformDestroy
   displayName: 'Terraform Destroy'
-  condition: eq(variables['DestroyResources'], 'true')
+  condition: eq(variables['destroyResources'], 'true')
   jobs:
   - job: DestroyInfra
     displayName: 'Destroy Infrastructure'
@@ -92,7 +103,7 @@ stages:
 - stage: TerraformApply
   displayName: 'TerraformApply'
   dependsOn: TerraformPlan
-  condition: and(succeeded(), ne(variables['DestroyResources'], 'true'))
+  condition: and(succeeded(), ne(variables['destroyResources'], 'true'))
 
   jobs:
   - job: ApplyInfra
