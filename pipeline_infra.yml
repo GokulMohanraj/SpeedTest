@@ -57,6 +57,7 @@ stages:
 
 
 - stage: TerraformPlan
+  dependsOn: TerraformDestroy
   condition: ne(variables['DestroyResources'], 'true')
   displayName: 'TerraformPlan'
   jobs:
