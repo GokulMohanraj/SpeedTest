@@ -31,6 +31,7 @@ resources:
 
 stages:
 
+# ------------------- Stage: Check Destroy Flag -------------------
 - stage: CheckDestroy
   displayName: 'Check if Infra was Destroyed'
   jobs:
@@ -41,7 +42,7 @@ stages:
       inputs:
         source: 'specific'
         project: '$(System.TeamProject)'
-        pipeline: InfraPipeline   # or pipeline ID
+        pipeline: InfraPipeline
         runVersion: 'latest'
         artifact: 'DestroyInfo'
         path: '$(Pipeline.Workspace)/InfraPipeline/DestroyInfo'
@@ -49,7 +50,11 @@ stages:
       displayName: 'Download DestroyInfo Artifact (if exists)'
 
     - script: |
-        if [ -f "$(Pipeline.Workspace)/InfraPipeline/DestroyInfo/destroy_flag.txt" ]; then
+        echo "Checking for destroy_flag.txt..."
+
+        FLAG_PATH="$PIPELINE_WORKSPACE/InfraPipeline/DestroyInfo/destroy_flag.txt"
+
+        if [ -f "$FLAG_PATH" ]; then
           echo "Terraform destroy was triggered."
           echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]true"
         else
@@ -59,11 +64,11 @@ stages:
       name: checkDestroy
       displayName: 'Check and Set destroyTriggered'
 
+# ------------------- Stage: Docker Build -------------------
 - stage: DockerBuild
-  variables: 
-    destroyTriggered: $[ dependencies.CheckDestroy.outputs['ReadFlag.checkDestroy.destroyTriggered'] ]
-  condition: ne(variables['destroyTriggered'], 'true')
   displayName: 'Docker Build Stage'
+  dependsOn: CheckDestroy
+  condition: ne(dependencies.CheckDestroy.outputs['ReadFlag.checkDestroy.destroyTriggered'], 'true')
   jobs:
   - job: BuildDockerImage
     displayName: 'Build Docker Image'
@@ -82,9 +87,11 @@ stages:
           $(Build_tag)
       displayName: 'Docker Build'
 
+# ------------------- Stage: Deploy to EC2 -------------------
 - stage: DeployToSpeedtestInstance
   displayName: 'Deploy to Speedtest Instance (via SSM)'
   dependsOn: DockerBuild
+  condition: succeeded()
   jobs:
   - job: DeployApp
     displayName: 'Deploy Application'
@@ -137,9 +144,11 @@ stages:
         AWS_DEFAULT_REGION: $(awsRegion)
       displayName: 'Run AWS CLI to Deploy App'
 
+# ------------------- Stage: Get App Access Info -------------------
 - stage: GetApplicationAccessInfo
   displayName: 'Get Application Access Information'
   dependsOn: DeployToSpeedtestInstance
+  condition: succeeded()
   jobs:
   - job: GetInfo
     displayName: 'Retrieve IP and Port'
