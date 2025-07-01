@@ -15,7 +15,7 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
-  # destroyResources: 'false' # Set to 'true' to enable resource destruction stage
+  # DestroyResources: 'false' # Set to 'true' to enable resource destruction stage
 
 stages:
 - stage: TerraformPlan
@@ -125,7 +125,8 @@ stages:
       displayName: 'Terraform Destroy'
       workingDirectory: '$(terraformDirectory)'
     - script: |
-        echo "true" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
+        mkdir -p $(Pipeline.Workspace)/destroy_info
+        echo "$DestroyResources" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
       displayName: 'Write destroy flag to file'
 
     - publish: $(Pipeline.Workspace)/destroy_info
