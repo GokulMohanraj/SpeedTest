@@ -43,11 +43,13 @@ stages:
         source: 'specific'
         project: '$(System.TeamProject)'
         pipeline: InfraPipeline
-        runVersion: 'latest'
+        runVersion: 'specific'
+        runId: $[ resources.pipeline.InfraPipeline.runId ]
         artifact: 'DestroyInfo'
         path: '$(Pipeline.Workspace)/InfraPipeline/DestroyInfo'
-      continueOnError: true
+        continueOnError: true
       displayName: 'Download DestroyInfo Artifact (if exists)'
+
 
     - script: |
         echo "Checking for destroy_flag.txt..."
@@ -61,7 +63,7 @@ stages:
           echo "No destroy flag found."
           echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]false"
         fi
-        
+
     - script: |
         echo "Listing contents of: $(Pipeline.Workspace)/InfraPipeline/DestroyInfo"
         ls -la $(Pipeline.Workspace)/InfraPipeline/DestroyInfo || echo "Directory not found"
