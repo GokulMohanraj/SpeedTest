@@ -10,7 +10,7 @@ pool:
   name: 'Agent pool'
 
 variables:
-  awsServiceConnection: 'AWS_Access_Key'
+  #awsServiceConnection: 'AWS_Access_Key'
   awsRegion: 'ap-south-1'
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
@@ -92,7 +92,7 @@ stages:
 - stage: TerraformApply
   displayName: 'TerraformApply'
   dependsOn: TerraformPlan
-  condition: and (succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: succeeded()
 
   jobs:
   - job: ApplyInfra
