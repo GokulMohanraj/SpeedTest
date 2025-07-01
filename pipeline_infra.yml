@@ -93,7 +93,7 @@ stages:
 - stage: TerraformApply
   displayName: 'TerraformApply'
   dependsOn: TerraformPlan
-  condition: succeeded()
+  condition: and(succeeded(), ne(variables['DestroyResources'], 'true'))
 
   jobs:
   - job: ApplyInfra
