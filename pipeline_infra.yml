@@ -124,3 +124,10 @@ stages:
         terraform destroy -auto-approve
       displayName: 'Terraform Destroy'
       workingDirectory: '$(terraformDirectory)'
+    - script: |
+        echo "true" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
+      displayName: 'Write destroy flag to file'
+
+    - publish: $(Pipeline.Workspace)/destroy_info
+      artifact: DestroyInfo
+      displayName: 'Publish destroy flag as artifact'

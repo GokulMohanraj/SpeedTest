@@ -30,7 +30,31 @@ resources:
             - main
 
 stages:
+
+- stage: CheckDestroy
+  displayName: 'Check if Infra was Destroyed'
+  jobs:
+  - job: ReadFlag
+    displayName: 'Read Destroy Flag'
+    steps:
+    - download: InfraPipeline
+      artifact: DestroyInfo
+
+    - script: |
+        if [ -f "$(Pipeline.Workspace)/InfraPipeline/DestroyInfo/destroy_flag.txt" ]; then
+          echo "Terraform destroy was triggered."
+          echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]true"
+        else
+          echo "No destroy flag found."
+          echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]false"
+        fi
+      name: checkDestroy
+      displayName: 'Check and Set destroyTriggered'
+
 - stage: DockerBuild
+  variable: 
+    destroyTriggered: $[ dependencies.CheckDestroy.outputs['ReadFlag.checkDestroy.destroyTriggered'] ]
+  condition: ne(variables['destroyTriggered'], 'true')
   displayName: 'Docker Build Stage'
   jobs:
   - job: BuildDockerImage
