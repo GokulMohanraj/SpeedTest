@@ -56,10 +56,13 @@ stages:
       displayName: 'Terraform Destroy'
       workingDirectory: '$(terraformDirectory)'
     - script: |
+        echo "ENV VAR: $destroyResources"
         mkdir -p $(Pipeline.Workspace)/destroy_info
         echo "$destroyResources" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
         echo destroyResources: $destroyResources
       displayName: 'Write destroy flag to file'
+      env:
+        destroyResources: $(destroyResources)
 
     - publish: $(Pipeline.Workspace)/destroy_info
       artifact: DestroyInfo
