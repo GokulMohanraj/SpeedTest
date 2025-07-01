@@ -92,7 +92,7 @@ stages:
 - stage: TerraformApply
   displayName: 'TerraformApply'
   dependsOn: TerraformPlan
-  #condition: and (succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and (succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
   jobs:
   - job: ApplyInfra

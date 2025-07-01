@@ -37,8 +37,16 @@ stages:
   - job: ReadFlag
     displayName: 'Read Destroy Flag'
     steps:
-    - download: InfraPipeline
-      artifact: DestroyInfo
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        source: 'specific'
+        project: '$(System.TeamProject)'
+        pipeline: InfraPipeline   # or pipeline ID
+        runVersion: 'latest'
+        artifact: 'DestroyInfo'
+        path: '$(Pipeline.Workspace)/InfraPipeline/DestroyInfo'
+      continueOnError: true
+      displayName: 'Download DestroyInfo Artifact (if exists)'
 
     - script: |
         if [ -f "$(Pipeline.Workspace)/InfraPipeline/DestroyInfo/destroy_flag.txt" ]; then
