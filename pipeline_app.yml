@@ -52,7 +52,7 @@ stages:
     - script: |
         echo "Checking for destroy_flag.txt..."
 
-        FLAG_PATH="$PIPELINE_WORKSPACE/InfraPipeline/DestroyInfo/destroy_flag.txt"
+        FLAG_PATH="$(Pipeline.Workspace)/InfraPipeline/DestroyInfo/destroy_flag.txt"
 
         if [ -f "$FLAG_PATH" ]; then
           echo "Terraform destroy was triggered."
@@ -61,6 +61,11 @@ stages:
           echo "No destroy flag found."
           echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]false"
         fi
+        
+    - script: |
+        echo "Listing contents of: $(Pipeline.Workspace)/InfraPipeline/DestroyInfo"
+        ls -la $(Pipeline.Workspace)/InfraPipeline/DestroyInfo || echo "Directory not found"
+
       name: checkDestroy
       displayName: 'Check and Set destroyTriggered'
 
