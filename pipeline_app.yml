@@ -52,7 +52,7 @@ stages:
       displayName: 'Check and Set destroyTriggered'
 
 - stage: DockerBuild
-  variable: 
+  variables: 
     destroyTriggered: $[ dependencies.CheckDestroy.outputs['ReadFlag.checkDestroy.destroyTriggered'] ]
   condition: ne(variables['destroyTriggered'], 'true')
   displayName: 'Docker Build Stage'

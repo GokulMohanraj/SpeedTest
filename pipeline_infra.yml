@@ -18,7 +18,46 @@ variables:
   # DestroyResources: 'false' # Set to 'true' to enable resource destruction stage
 
 stages:
+
+- stage: TerraformDestroy
+  displayName: 'Terraform Destroy'
+  condition: eq(variables['DestroyResources'], 'true')
+  jobs:
+  - job: DestroyInfra
+    displayName: 'Destroy Infrastructure'
+    steps:
+    - checkout: self
+
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - script: |
+        echo "--- Initializing Terraform for Destroy ---"
+        terraform init -upgrade
+      displayName: 'Terraform Init for Destroy'
+      workingDirectory: '$(terraformDirectory)'
+
+    - script: |
+        echo "--- Applying Terraform Destroy ---"
+        terraform destroy -auto-approve
+      displayName: 'Terraform Destroy'
+      workingDirectory: '$(terraformDirectory)'
+    - script: |
+        mkdir -p $(Pipeline.Workspace)/destroy_info
+        echo "$DestroyResources" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
+      displayName: 'Write destroy flag to file'
+
+    - publish: $(Pipeline.Workspace)/destroy_info
+      artifact: DestroyInfo
+      displayName: 'Publish destroy flag as artifact'
+    - script: |
+        echo "Terraform destroy completed successfully."
+
+
 - stage: TerraformPlan
+  condition: ne(variables['DestroyResources'], 'true')
   displayName: 'TerraformPlan'
   jobs:
   - job: PlanInfra
@@ -53,7 +92,7 @@ stages:
 - stage: TerraformApply
   displayName: 'TerraformApply'
   dependsOn: TerraformPlan
-  condition: and (succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  #condition: and (succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
   jobs:
   - job: ApplyInfra
@@ -99,36 +138,4 @@ stages:
       artifact: EC2ConnectionInfo
       displayName: 'Publish EC2 Connection Info Artifact'
 
-- stage: TerraformDestroy
-  displayName: 'Terraform Destroy'
-  condition: and(succeeded(), eq(variables['DestroyResources'], 'true'))
-  jobs:
-  - job: DestroyInfra
-    displayName: 'Destroy Infrastructure'
-    steps:
-    - checkout: self
 
-    - task: TerraformInstaller@0
-      displayName: 'Install Terraform'
-      inputs:
-        terraformVersion: 'latest'
-
-    - script: |
-        echo "--- Initializing Terraform for Destroy ---"
-        terraform init -upgrade
-      displayName: 'Terraform Init for Destroy'
-      workingDirectory: '$(terraformDirectory)'
-
-    - script: |
-        echo "--- Applying Terraform Destroy ---"
-        terraform destroy -auto-approve
-      displayName: 'Terraform Destroy'
-      workingDirectory: '$(terraformDirectory)'
-    - script: |
-        mkdir -p $(Pipeline.Workspace)/destroy_info
-        echo "$DestroyResources" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
-      displayName: 'Write destroy flag to file'
-
-    - publish: $(Pipeline.Workspace)/destroy_info
-      artifact: DestroyInfo
-      displayName: 'Publish destroy flag as artifact'
