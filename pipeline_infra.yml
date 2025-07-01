@@ -68,7 +68,7 @@ stages:
 
 
 - stage: TerraformPlan
-  condition: ne(variables['DestroyResources'], 'true')
+  condition: ne(variables['destroyResources'], 'true') 
   displayName: 'TerraformPlan'
   jobs:
   - job: PlanInfra
@@ -103,7 +103,7 @@ stages:
 - stage: TerraformApply
   displayName: 'TerraformApply'
   dependsOn: TerraformPlan
-  condition: and(succeeded(), ne(variables['destroyResources'], 'true'))
+  condition: and(succeeded('TerraformPlan'), ne(variables['destroyResources'], 'true'))
 
   jobs:
   - job: ApplyInfra
