@@ -15,7 +15,7 @@ variables:
   terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   terraformStateBucket: "bucket-for-speedtest"
   terraformStateKey: "terraform/terraform.tfstate"
-  destroyResources: 'false' # Set to 'true' to enable resource destruction stage
+  # destroyResources: 'false' # Set to 'true' to enable resource destruction stage
 
 stages:
 
@@ -25,7 +25,7 @@ stages:
     - job: Inspect
       steps:
         - script: |
-            echo "DestroyResources = '$(DestroyResources)'"
+            echo "DestroyResources = '$(destroyResources)'"
             echo "Build.Reason = '$(Build.Reason)'"
             echo "PreviousSkipped = $(dependencies.TerraformPlan.result)"
           displayName: 'Print pipeline state'
