@@ -44,18 +44,28 @@ stages:
           continueOnError: true
 
         - script: |
-            FLAG_PATH="$(Pipeline.Workspace)/InfraPipeline/DestroyInfo/destroy_flag.txt"
-            echo "Checking for destroy_flag.txt at $FLAG_PATH"
+            echo "Checking for destroy_flag.txt..."
 
-            if [ -f "$FLAG_PATH" ]; then
+            FLAG_FILE="$(Pipeline.Workspace)/InfraPipeline/DestroyInfo/destroy_flag.txt"
+
+            if [ -f "$FLAG_FILE" ]; then
+            FLAG_VALUE=$(cat "$FLAG_FILE")
+            echo "destroy_flag.txt content: $FLAG_VALUE"
+
+            if [ "$FLAG_VALUE" = "true" ]; then
               echo "Terraform destroy was triggered."
               echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]true"
             else
-              echo "No destroy flag found."
+              echo "Destroy flag not set to true."
+              echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]false"
+            fi
+            else
+              echo "destroy_flag.txt not found."
               echo "##vso[task.setvariable variable=destroyTriggered;isOutput=true]false"
             fi
           name: checkDestroy
           displayName: 'Check and Set destroyTriggered'
+
 
 
 # ------------------- Stage: Docker Build -------------------
