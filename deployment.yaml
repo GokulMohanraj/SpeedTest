@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speed_test.deployment
+spec:
+  replicas: 3  # Creates 3 replicas
+  selector:
+    matchLabels:
+      app: speed
+  template:
+    metadata:
+      labels:
+        app: speed
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest  # Uses the official Nginx Docker image
+        ports:
+        - containerPort: 80
