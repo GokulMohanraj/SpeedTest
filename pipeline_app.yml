@@ -12,6 +12,8 @@ pool:
   name: 'Agent pool'
 
 variables:
+  awsServiceConnection: 'AWS_Access_Key'
+  s3Bucket: "bucket-for-speedtest"
   DockerConnection: 'DockerHubConnection'
   awsRegion: 'ap-south-1'
   appDirectory: '$(System.DefaultWorkingDirectory)/app'
@@ -115,6 +117,16 @@ stages:
       name: setEc2OutputVariables
       displayName: 'Read and Output EC2 Info'
 
+    - task: AmazonS3Upload@1
+      inputs:
+        awsCredentials: '$(awsServiceConnection)'
+        regionName: '$(awsRegion)'
+        bucketName: '$(s3Bucket)'
+        sourceFolder: '$(appDirectory)'
+        globExpressions: 'deployment.yaml'
+        targetFolder: 'k8s-deployment-files'
+      displayName: 'Upload deployment.yaml to S3'
+
     - script: |
         source ec2_vars.sh
         echo "Sending SSM command to EC2 instance: $EC2_INSTANCE_ID"
@@ -123,23 +135,13 @@ stages:
           --region $(awsRegion) \
           --document-name "AWS-RunShellScript" \
           --instance-ids "$EC2_INSTANCE_ID" \
-          --comment "Install Docker and Deploy App" \
+          --comment "Install K3s and Deploy App" \
           --parameters 'commands=[
-            "sudo apt-get update -y",
-            "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common",
-            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg",
-            "sudo chmod a+r /etc/apt/keyrings/docker.gpg",
-            "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
-            "sudo apt-get update -y",
-            "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
-            "sudo systemctl start docker",
-            "sudo systemctl enable docker",
-            "sudo usermod -aG docker ubuntu",
-            "sleep 5",
-            "sudo docker pull $(Docker_repo):$(Build_tag)",
-            "sudo docker stop speedtest-app || true",
-            "sudo docker rm speedtest-app || true",
-            "sudo docker run -d --name speedtest-app -p 80:5000 $(Docker_repo):$(Build_tag)"
+            "curl -sfL https://get.k3s.io | sh -",
+            "sleep 10",
+            "mkdir -p /home/ubuntu/app",
+            "aws s3 cp s3://<your-bucket-name>/deployment.yaml /home/ubuntu/app/deployment.yaml",
+            "/usr/local/bin/kubectl apply -f /home/ubuntu/app/deployment.yaml"
           ]' \
           --output text
       env:
