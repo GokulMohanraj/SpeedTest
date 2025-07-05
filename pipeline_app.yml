@@ -117,15 +117,6 @@ stages:
       name: setEc2OutputVariables
       displayName: 'Read and Output EC2 Info'
 
-    - task: AmazonS3Upload@1
-      inputs:
-        awsCredentials: '$(awsServiceConnection)'
-        regionName: '$(awsRegion)'
-        bucketName: '$(s3Bucket)'
-        sourceFolder: '$(appDirectory)'
-        globExpressions: 'deployment.yaml'
-        targetFolder: 'k8s-deployment-files'
-      displayName: 'Upload deployment.yaml to S3'
 
     - script: |
         source ec2_vars.sh
