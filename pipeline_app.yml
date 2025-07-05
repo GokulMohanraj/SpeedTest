@@ -117,6 +117,13 @@ stages:
       name: setEc2OutputVariables
       displayName: 'Read and Output EC2 Info'
 
+    - script: |
+        aws s3 cp $(appDirectory)/deployment.yaml s3://$(s3Bucket)/k8s-deployment-files/deployment.yaml
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(awsRegion)
+      displayName: 'Upload deployment.yaml using AWS CLI'
 
     - script: |
         source ec2_vars.sh
