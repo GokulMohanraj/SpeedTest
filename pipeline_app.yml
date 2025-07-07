@@ -118,6 +118,8 @@ stages:
       displayName: 'Read and Output EC2 Info'
 
     - script: |
+        echo ls $(appDirectory)
+        echo "Copying deployment.yaml to S3 bucket: $(s3Bucket)"
         aws s3 cp $(appDirectory)/deployment.yaml s3://$(s3Bucket)/k8s-deployment-files/deployment.yaml
       env:
         AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
