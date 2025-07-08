@@ -146,7 +146,7 @@ stages:
               "mkdir -p /home/ubuntu/app",
               "aws s3 cp s3://bucket-for-speedtest/k8s-deployment-files/deployment.yaml /home/ubuntu/app/deployment.yaml",
               "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-              "kubectl apply -f /home/ubuntu/app/deployment.yaml"
+              "kubectl apply -f /home/ubuntu/app/deployment.yaml",
               "echo 'Waiting for pods to be ready...'",
               "kubectl wait --for=condition=ready pod -l app=speedtest --timeout=60s",
               "kubectl get pods -o wide",
