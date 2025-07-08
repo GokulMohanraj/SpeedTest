@@ -18,7 +18,7 @@ variables:
   # Set to 'true' to enable resource destruction stage
   # Caution: This will destroy all resources managed by Terraform
   # Set to 'false' to skip the destruction stage
-  destroyResources: 'false' 
+  destroyResources: 'true' 
 
 stages:
 
