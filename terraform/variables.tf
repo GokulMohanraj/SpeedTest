@@ -26,5 +26,5 @@ variable "key_name" {
 variable "role_name" {
   description = "The name of the IAM role to attach to the EC2 instance"
   type        = string
-  default     = "S3-access" # Ensure this matches your IAM Role name exactly
+  default     = "S3-Access" # Ensure this matches your IAM Role name exactly
 }
