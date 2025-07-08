@@ -12,9 +12,12 @@ pool:
   name: 'Agent pool'
 
 variables:
+  awsServiceConnection: 'AWS_Access_Key'
+  s3Bucket: "bucket-for-speedtest"
   DockerConnection: 'DockerHubConnection'
   awsRegion: 'ap-south-1'
   appDirectory: '$(System.DefaultWorkingDirectory)/app'
+  terraformDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   Docker_repo: 'gokulmohanraj/speed_test_app'
   Build_tag: $(Build.BuildId)
   ec2User: 'ubuntu'
@@ -107,13 +110,21 @@ stages:
     - script: |
         EC2_INSTANCE_ID=$(cat $(Pipeline.Workspace)/InfraPipeline/EC2ConnectionInfo/instance_id.txt)
         EC2_PUBLIC_IP=$(cat $(Pipeline.Workspace)/InfraPipeline/EC2ConnectionInfo/ip_info.txt)
-        echo "Retrieved EC2 Instance ID: $EC2_INSTANCE_ID"
-        echo "Retrieved EC2 Public IP: $EC2_PUBLIC_IP"
         echo "##vso[task.setvariable variable=ec2InstanceId;isOutput=true;]$EC2_INSTANCE_ID"
         echo "##vso[task.setvariable variable=ec2PublicIp;isOutput=true;]$EC2_PUBLIC_IP"
         echo "EC2_INSTANCE_ID=$EC2_INSTANCE_ID" > ec2_vars.sh
       name: setEc2OutputVariables
       displayName: 'Read and Output EC2 Info'
+
+    - script: |
+        ls $(terraformDirectory)
+        echo "Copying deployment.yaml to S3 bucket: $(s3Bucket)"
+        aws s3 cp $(terraformDirectory)/deployment.yaml s3://$(s3Bucket)/k8s-deployment-files/deployment.yaml
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(awsRegion)
+      displayName: 'Upload deployment.yaml using AWS CLI'
 
     - script: |
         source ec2_vars.sh
@@ -123,23 +134,13 @@ stages:
           --region $(awsRegion) \
           --document-name "AWS-RunShellScript" \
           --instance-ids "$EC2_INSTANCE_ID" \
-          --comment "Install Docker and Deploy App" \
+          --comment "Install K3s and Deploy App" \
           --parameters 'commands=[
-            "sudo apt-get update -y",
-            "sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common",
-            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg",
-            "sudo chmod a+r /etc/apt/keyrings/docker.gpg",
-            "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
-            "sudo apt-get update -y",
-            "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
-            "sudo systemctl start docker",
-            "sudo systemctl enable docker",
-            "sudo usermod -aG docker ubuntu",
-            "sleep 5",
-            "sudo docker pull $(Docker_repo):$(Build_tag)",
-            "sudo docker stop speedtest-app || true",
-            "sudo docker rm speedtest-app || true",
-            "sudo docker run -d --name speedtest-app -p 80:5000 $(Docker_repo):$(Build_tag)"
+            "curl -sfL https://get.k3s.io | sh -",
+            "sleep 10",
+            "mkdir -p /home/ubuntu/app",
+            "aws s3 cp s3://<your-bucket-name>/deployment.yaml /home/ubuntu/app/deployment.yaml",
+            "/usr/local/bin/kubectl apply -f /home/ubuntu/app/deployment.yaml"
           ]' \
           --output text
       env:
@@ -164,10 +165,5 @@ stages:
         APP_URL="http://$(mappedEc2PublicIp):$(appPort)"
         echo "##vso[task.setvariable variable=appAccessUrl;]$APP_URL"
 
-        echo "--------------------------------------------------------"
-        echo "Instance ID: $(mappedEc2InstanceId)"
-        echo "IP Address: $(mappedEc2PublicIp)"
-        echo "Port: $(appPort)"
         echo "URL: $APP_URL"
-        echo "--------------------------------------------------------"
       displayName: 'Display Application Access Details'
