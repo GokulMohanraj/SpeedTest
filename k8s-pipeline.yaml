@@ -1,0 +1,102 @@
+name: K8sAppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - app/*
+
+pool:
+  vmImage: 'Agent-pool'
+
+variables:
+  DockerConnection: 'DockerHubConnection'
+  Docker_repo: 'gokulmohanraj/speed_test_app'  # Replace with your actual DockerHub repo
+  Build_tag: $(Build.BuildId)
+  kubernetesNamespace: 'default'
+  containerPort: '5000'
+  appPort: '80'
+
+stages:
+
+# ------------------- Stage: Docker Build -------------------
+- stage: DockerBuild
+  displayName: 'Docker Build Stage'
+  jobs:
+  - job: BuildDockerImage
+    displayName: 'Build Docker Image'
+    steps:
+    - checkout: self
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: '$(DockerConnection)'
+        repository: '$(Docker_repo)'
+        command: 'buildAndPush'
+        Dockerfile: '$(System.DefaultWorkingDirectory)/app/Dockerfile'
+        tags: |
+          latest
+          $(Build_tag)
+      displayName: 'Build and Push Docker Image'
+
+# ------------------- Stage: Deploy to Kubernetes -------------------
+- stage: DeployToKIND
+  displayName: 'Deploy to KIND Cluster'
+  dependsOn: DockerBuild
+  condition: succeeded()
+  jobs:
+  - job: DeployApp
+    displayName: 'Deploy to KIND'
+    pool:
+      vmImage: 'Agent-pool'  # Make sure Docker is available
+    steps:
+    - checkout: self
+
+    # Step 1: Install kubectl
+    - task: KubernetesInstaller@0
+      inputs:
+        kubectlVersion: 'latest'
+      displayName: 'Install kubectl'
+
+    # Step 2: Install KIND
+    - script: |
+        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
+        chmod +x ./kind
+        sudo mv ./kind /usr/local/bin/kind
+      displayName: 'Install KIND'
+
+    # Step 3: Create KIND cluster
+    - script: |
+        kind create cluster --name kind-speedtest
+        kubectl cluster-info --context kind-kind-speedtest
+      displayName: 'Create KIND Cluster'
+
+    # Step 4: Load Docker image built earlier (optional if using Docker Hub)
+    - script: |
+        docker pull $(Docker_repo):$(Build_tag)
+        kind load docker-image $(Docker_repo):$(Build_tag) --name kind-speedtest
+      displayName: 'Load Docker Image into KIND'
+
+    # Step 5: Apply Kubernetes manifests
+    - script: |
+        kubectl apply -f k8s-manifest/deployment.yml
+        kubectl apply -f k8s-manifest/service.yml
+      displayName: 'Apply Kubernetes Manifests'
+
+
+# ------------------- Stage: Output App URL -------------------
+- stage: GetAppAccessInfo
+  displayName: 'Get K8s App Access URL'
+  dependsOn: DeployToKubernetes
+  condition: succeeded()
+  jobs:
+  - job: GetInfo
+    displayName: 'Output App URL'
+    steps:
+    - script: |
+        echo "Assuming your LoadBalancer or NodePort service exposes the app..."
+        echo "You will need kubectl or external IP check to fetch the app URL."
+        echo "For example, kubectl get svc -n $(kubernetesNamespace)"
+      displayName: 'Instruction to Access App'

@@ -1,0 +1,126 @@
+name: InfraPipeline_Terragrunt_$(Date:yyyyMMdd)$(Rev:rr)
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/*
+
+pool:
+  name: 'Agent pool'
+
+variables:
+  awsRegion: 'ap-south-1'
+  terragruntDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  destroyResources: 'false'
+
+stages:
+
+- stage: Debug
+  displayName: '🔧 Debug Info'
+  jobs:
+    - job: Inspect
+      steps:
+        - script: |
+            echo "DestroyResources = '$(destroyResources)'"
+            echo "Build.Reason = '$(Build.Reason)'"
+          displayName: 'Print pipeline state'
+
+- stage: TerragruntDestroy
+  displayName: 'Terragrunt Destroy'
+  condition: eq(variables['destroyResources'], 'true')
+  jobs:
+    - job: DestroyInfra
+      displayName: 'Destroy Infrastructure'
+      steps:
+        - checkout: self
+
+        - script: |
+            sudo apt-get update -y
+            sudo apt-get install -y unzip
+            curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v0.54.22/terragrunt_linux_amd64 -o terragrunt
+            chmod +x terragrunt
+            sudo mv terragrunt /usr/local/bin/
+          displayName: 'Install Terragrunt'
+
+        - script: |
+            echo "--- Running Terragrunt Destroy ---"
+            terragrunt run-all destroy -auto-approve
+          displayName: 'Terragrunt Destroy'
+          workingDirectory: '$(terragruntDirectory)'
+
+- stage: WriteDestroyFlag
+  displayName: 'Write Destroy Flag'
+  condition: always()
+  jobs:
+    - job: WriteFlag
+      steps:
+        - script: |
+            mkdir -p $(Pipeline.Workspace)/destroy_info
+            echo "$(destroyResources)" > $(Pipeline.Workspace)/destroy_info/destroy_flag.txt
+            echo "Wrote destroy_flag.txt with value: $(destroyResources)"
+          displayName: 'Write destroy flag to file'
+
+        - publish: $(Pipeline.Workspace)/destroy_info
+          artifact: DestroyInfo
+          displayName: 'Publish destroy flag as artifact'
+
+- stage: TerraformPlan
+  condition: ne(variables['destroyResources'], 'true') 
+  displayName: 'Terragrunt Plan'
+  jobs:
+  - job: PlanInfra
+    displayName: 'Terragrunt Plan All'
+    steps:
+    - checkout: self
+
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - script: |
+        echo "--- Running terragrunt plan-all ---"
+        cd $(terraformDirectory)/environments/dev
+        terragrunt run-all plan
+      displayName: 'Terragrunt Plan All'
+
+- stage: TerragruntApply
+  displayName: 'Terragrunt Apply'
+  condition: ne(variables['destroyResources'], 'true')
+  jobs:
+    - job: ApplyInfra
+      displayName: 'Apply Infrastructure'
+      steps:
+        - checkout: self
+
+        - script: |
+            sudo apt-get update -y
+            sudo apt-get install -y unzip
+            curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v0.54.22/terragrunt_linux_amd64 -o terragrunt
+            chmod +x terragrunt
+            sudo mv terragrunt /usr/local/bin/
+          displayName: 'Install Terragrunt'
+
+        - script: |
+            echo "--- Running Terragrunt Apply ---"
+            terragrunt run-all apply -auto-approve
+          displayName: 'Terragrunt Apply'
+          workingDirectory: '$(terragruntDirectory)'
+
+        - script: |
+            echo "--- Capturing Outputs ---"
+            EC2_IP=$(terragrunt output -raw public_ip || echo "")
+            EC2_INSTANCE_ID=$(terragrunt output -raw instance_id || echo "")
+
+            mkdir -p $(Pipeline.Workspace)/ec2_connection_info
+            echo "$EC2_IP" > $(Pipeline.Workspace)/ec2_connection_info/ip_info.txt
+            echo "$EC2_INSTANCE_ID" > $(Pipeline.Workspace)/ec2_connection_info/instance_id.txt
+            echo "EC2 connection info saved"
+          displayName: 'Capture EC2 Outputs'
+          workingDirectory: '$(terragruntDirectory)'
+
+        - publish: $(Pipeline.Workspace)/ec2_connection_info
+          artifact: EC2ConnectionInfo
+          displayName: 'Publish EC2 Connection Info Artifact'

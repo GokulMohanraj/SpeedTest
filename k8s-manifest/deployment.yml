@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speed-test-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: speedtest
+  template:
+    metadata:
+      labels:
+        app: speedtest
+    spec:
+      containers:
+      - name: speedtest
+        image: gokulmohanraj/speed_test_app:$(Build.BuildId)
+        ports:
+        - containerPort: 5000

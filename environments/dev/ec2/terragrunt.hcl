@@ -1,6 +1,6 @@
 terraform {
   
-  source = "../../../modules/ec2"
+  source = "../../../terraform/ec2"
   
 }
 

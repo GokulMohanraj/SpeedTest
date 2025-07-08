@@ -1,6 +1,6 @@
 terraform {
   
-  source = "../../..s/modules/vpc"
+  source = "../../../modules/vpc"
   
 }
 
