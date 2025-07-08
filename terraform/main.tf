@@ -26,7 +26,15 @@ resource "aws_security_group" "speedtest_sg" {
     to_port     = 32767
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  }    
+  } 
+
+  ingress {
+  description = "Allow K8s NodePort/LoadBalancer"
+  from_port   = 8081
+  to_port     = 8081
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}   
   ingress {
     description = "Allow SSH traffic from anywhere"
     from_port   = 22
