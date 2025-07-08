@@ -18,20 +18,9 @@ variables:
   # Set to 'true' to enable resource destruction stage
   # Caution: This will destroy all resources managed by Terraform
   # Set to 'false' to skip the destruction stage
-  destroyResources: 'false' 
+  destroyResources: 'true' 
 
 stages:
-
-- stage: Debug
-  displayName: '🔧 Debug Info'
-  jobs:
-    - job: Inspect
-      steps:
-        - script: |
-            echo "DestroyResources = '$(destroyResources)'"
-            echo "Build.Reason = '$(Build.Reason)'"
-            echo "PreviousSkipped = $(dependencies.TerraformPlan.result)"
-          displayName: 'Print pipeline state'
 
 - stage: TerraformDestroy
   displayName: 'Terraform Destroy'
