@@ -135,13 +135,23 @@ stages:
           --instance-ids "$EC2_INSTANCE_ID" \
           --comment "Install K3s and Deploy App" \
           --parameters 'commands=[
-            "bash -c \"curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\\\"--write-kubeconfig-mode 644\\\" sh -\"",
-            "sleep 10",
-            "mkdir -p /home/ubuntu/app",
-            "aws s3 cp s3://bucket-for-speedtest/k8s-deployment-files/deployment.yaml /home/ubuntu/app/deployment.yaml",
-            "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-            "kubectl apply -f /home/ubuntu/app/deployment.yaml"
-          ]' \
+              "sudo apt-get update -y",
+              "sudo apt-get install -y curl unzip",
+              "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"",
+              "unzip awscliv2.zip",
+              "sudo ./aws/install",
+              "aws --version",
+              "bash -c \"curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\\\"--write-kubeconfig-mode 644\\\" sh -\"",
+              "sleep 10",
+              "mkdir -p /home/ubuntu/app",
+              "aws s3 cp s3://bucket-for-speedtest/k8s-deployment-files/deployment.yaml /home/ubuntu/app/deployment.yaml",
+              "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
+              "kubectl apply -f /home/ubuntu/app/deployment.yaml"
+              "echo 'Waiting for pods to be ready...'",
+              "kubectl wait --for=condition=ready pod -l app=speedtest --timeout=60s",
+              "kubectl get pods -o wide",
+              "kubectl get svc speedtest"
+            ]'
           --output text
       env:
         AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
