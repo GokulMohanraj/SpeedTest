@@ -18,7 +18,15 @@ resource "aws_security_group" "speedtest_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  }    
+  } 
+
+  ingress {
+    description = "Allow NodePort traffic for Kubernetes"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }   
   ingress {
     description = "Allow SSH traffic from anywhere"
     from_port   = 22
