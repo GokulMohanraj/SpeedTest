@@ -135,7 +135,7 @@ stages:
           --instance-ids "$EC2_INSTANCE_ID" \
           --comment "Install K3s and Deploy App" \
           --parameters 'commands=[
-            "curl -sfL https://get.k3s.io | sh -",
+            curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644" sh -
             "sleep 10",
             "mkdir -p /home/ubuntu/app",
             "aws s3 cp s3://$(s3Bucket)/k8s-deployment-files/deployment.yaml /home/ubuntu/app/deployment.yaml",
