@@ -22,3 +22,9 @@ variable "key_name" {
   default     = "speedtest_key"
   
 }
+
+variable "role_name" {
+  description = "The name of the IAM role to attach to the EC2 instance"
+  type        = string
+  default     = "S3access" # Ensure this matches your IAM Role name exactly
+}

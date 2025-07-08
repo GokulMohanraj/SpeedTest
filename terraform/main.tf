@@ -11,43 +11,43 @@ data "aws_key_pair" "existing_key" {
 resource "aws_security_group" "speedtest_sg" {
   name        = var.security_group_name
   description = "Security group for Speedtest EC2 instance"
-  vpc_id      = data.aws_vpc.default.id # Default VPC
-  ingress {
-    description = "Allow HTTP traffic from anywhere"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  vpc_id      = data.aws_vpc.default.id
+
+  dynamic "ingress" {
+    for_each = [
+      {
+        description = "Allow HTTP traffic"
+        from_port   = 80
+        to_port     = 80
+      },
+      {
+        description = "Allow NodePort range for Kubernetes"
+        from_port   = 30000
+        to_port     = 32767
+      },
+      {
+        description = "Allow app port (8081)"
+        from_port   = 8081
+        to_port     = 8081
+      },
+      {
+        description = "Allow SSH"
+        from_port   = 22
+        to_port     = 22
+      }
+    ]
+    content {
+      description = ingress.value.description
+      from_port   = ingress.value.from_port
+      to_port     = ingress.value.to_port
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
-
-  ingress {
-    description = "Allow NodePort traffic for Kubernetes"
-    from_port   = 30000
-    to_port     = 32767
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  } 
-
-  ingress {
-  description = "Allow K8s NodePort/LoadBalancer"
-  from_port   = 8081
-  to_port     = 8081
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-}   
-  ingress {
-    description = "Allow SSH traffic from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
-    protocol    = "-1" # All traffic
+    protocol    = "-1"  # Allow all outbound
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -56,10 +56,18 @@ resource "aws_security_group" "speedtest_sg" {
   }
 }
 
+
 # Data source to fetch the default VPC (optional, but good practice)
 data "aws_vpc" "default" {
   default = true
 }
+
+# IAM Role for EC2 Instance
+resource "aws_iam_instance_profile" "s3_access_profile" {
+  name = "s3access-instance-profile"
+  role = var.role_name 
+}
+
 
 # EC2 Instance
 
@@ -68,6 +76,7 @@ resource "aws_instance" "speedtest" {
   instance_type = var.instance_type
   key_name      = data.aws_key_pair.existing_key.key_name
   security_groups = [aws_security_group.speedtest_sg.name]
+  iam_instance_profile = aws_iam_instance_profile.s3_access_profile.name
   tags = {
     Name = "Speedtest-Instance"
   }
