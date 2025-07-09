@@ -135,21 +135,24 @@ stages:
           --instance-ids "$EC2_INSTANCE_ID" \
           --comment "Install K3s and Deploy App" \
           --parameters 'commands=[
-              "sudo apt-get update -y",
-              "sudo apt-get install -y curl unzip",
-              "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"",
-              "unzip awscliv2.zip",
-              "sudo ./aws/install",
-              "aws --version",
-              "bash -c \"curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\\\"--write-kubeconfig-mode 644\\\" sh -\"",
-              "sleep 10",
-              "sudo mkdir -p /home/ubuntu/app",
-              "sudo chown -R ubuntu:ubuntu /home/ubuntu/app",
-              "aws s3 cp s3://bucket-for-speedtest/k8s-deployment-files/deployment.yaml /home/ubuntu/app/deployment.yaml",
-              "cd /home/ubuntu/app && ls -l",
-              "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-              "kubectl apply -f /home/ubuntu/app/deployment.yaml"
-            ]'\
+            "sudo apt-get update -y",
+            "sudo apt-get install -y curl unzip",
+            "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"",
+            "unzip -o awscliv2.zip",
+            "sudo ./aws/install",
+            "aws --version",
+            "bash -c \"curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\\\"--write-kubeconfig-mode 644\\\" sh -\"",
+            "sleep 10",
+            "sudo mkdir -p /home/ubuntu/app",
+            "sudo chown -R ubuntu:ubuntu /home/ubuntu/app",
+            "echo 'Testing S3 access...' > /home/ubuntu/app/test.txt",
+            "aws s3 ls s3://$(s3Bucket)/k8s-deployment-files/",
+            "aws s3 cp s3://$(s3Bucket)/k8s-deployment-files/ /home/ubuntu/app/ --recursive",
+            "ls -l /home/ubuntu/app",
+            "cat /home/ubuntu/app/deployment.yaml || echo 'File missing'",
+            "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
+            "kubectl apply -f /home/ubuntu/app/deployment.yaml || echo 'kubectl apply failed'"
+          ]' \
           --output text
       env:
         AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
