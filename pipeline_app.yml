@@ -150,7 +150,7 @@ stages:
             "ls -l /home/ubuntu/app",
             "cat /home/ubuntu/app/deployment.yaml || echo 'File missing'",
             "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-            "kubectl apply -f /home/ubuntu/app/deployment.yaml || echo 'kubectl apply failed'"
+            "kubectl apply -f /home/ubuntu/app/deployment.yaml"
           ]' \
           --output text
       env:
