@@ -141,14 +141,9 @@ stages:
               "unzip awscliv2.zip",
               "sudo ./aws/install",
               "aws --version",
-              "bash -c \"curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\\\"--write-kubeconfig-mode 644\\\" sh -\"",
-              "sleep 10",
               "sudo mkdir -p /home/ubuntu/app",
               "sudo chown -R ubuntu:ubuntu /home/ubuntu/app",
               "aws s3 cp s3://bucket-for-speedtest/k8s-deployment-files/deployment.yaml /home/ubuntu/app/deployment.yaml",
-              "cd /home/ubuntu/app && ls -l",
-              "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-              "kubectl apply -f /home/ubuntu/app/deployment.yaml"
             ]'\
           --output text
       env:
@@ -156,6 +151,15 @@ stages:
         AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
         AWS_DEFAULT_REGION: $(awsRegion)
       displayName: 'Run AWS CLI to Deploy App'
+
+    - task: KubernetesInstaller@0
+      inputs:
+        kubectlVersion: 'latest'
+      displayName: 'Install kubectl'
+
+    - script: |
+        kubectl apply -f /home/ubuntu/app/deployment.yaml
+      displayName: 'Apply Kubernetes Manifests'
 
 # ------------------- Stage: Get App Access Info -------------------
 - stage: GetApplicationAccessInfo
