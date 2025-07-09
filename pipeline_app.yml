@@ -145,7 +145,6 @@ stages:
             "sleep 10",
             "sudo mkdir -p /home/ubuntu/app",
             "sudo chown -R ubuntu:ubuntu /home/ubuntu/app",
-            "echo 'Testing S3 access...' > /home/ubuntu/app/test.txt",
             "aws s3 ls s3://$(s3Bucket)/k8s-deployment-files/",
             "aws s3 cp s3://$(s3Bucket)/k8s-deployment-files/ /home/ubuntu/app/ --recursive",
             "ls -l /home/ubuntu/app",
