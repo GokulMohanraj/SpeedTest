@@ -5,10 +5,10 @@ trigger:
       - main
   paths:
     include:
-      - terraform/*
+      - environment/*
 
 pool:
-  name: 'default'
+  name: 'Agent-pool'
 
 variables:
   awsRegion: 'ap-south-1'

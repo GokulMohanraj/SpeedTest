@@ -3,13 +3,13 @@ name: K8sAppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
 trigger:
   branches:
     include:
-      - main
+      - environment
   paths:
     include:
       - app/*
 
 pool:
-  vmImage: 'default'
+  vmImage: 'Agent-pool'
 
 variables:
   DockerConnection: 'DockerHubConnection'
