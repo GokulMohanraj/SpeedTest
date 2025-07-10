@@ -9,7 +9,7 @@ trigger:
       - app/*
 
 pool:
-  vmImage: 'Agent-pool'
+  vmImage: 'default'
 
 variables:
   DockerConnection: 'DockerHubConnection'
@@ -50,14 +50,16 @@ stages:
   - job: DeployApp
     displayName: 'Deploy to KIND'
     pool:
-      vmImage: 'Agent-pool'  # Make sure Docker is available
+      vmImage: 'default'  # Make sure Docker is available
     steps:
     - checkout: self
 
     # Step 1: Install kubectl
-    - task: KubernetesInstaller@0
-      inputs:
-        kubectlVersion: 'latest'
+    - script: |
+       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+       chmod +x kubectl
+       sudo mv kubectl /usr/local/bin/
+       kubectl version --client
       displayName: 'Install kubectl'
 
     # Step 2: Install KIND
