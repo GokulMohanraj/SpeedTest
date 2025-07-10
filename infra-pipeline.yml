@@ -2,7 +2,7 @@ name: InfraPipeline_Terragrunt_$(Date:yyyyMMdd)$(Rev:rr)
 trigger:
   branches:
     include:
-      - main
+      - environment
   paths:
     include:
       - environment/*
