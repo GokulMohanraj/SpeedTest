@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: speed-test-deployment
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: speedtest
@@ -17,3 +17,5 @@ spec:
         image: gokulmohanraj/speed_test_app:$(Build.BuildId)
         ports:
         - containerPort: 5000
+
+
