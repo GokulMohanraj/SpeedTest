@@ -17,5 +17,3 @@ spec:
         image: gokulmohanraj/speed_test_app:$(Build.BuildId)
         ports:
         - containerPort: 5000
-
-
