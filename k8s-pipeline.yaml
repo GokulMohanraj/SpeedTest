@@ -3,7 +3,9 @@ name: K8sAppPipeline_$(Date:yyyyMMdd)$(Rev:rr)
 trigger:
   branches:
     include:
+      - main
       - environment
+
   paths:
     include:
       - app/*git add

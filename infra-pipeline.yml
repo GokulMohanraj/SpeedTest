@@ -2,6 +2,7 @@ name: InfraPipeline_Terragrunt_$(Date:yyyyMMdd)$(Rev:rr)
 trigger:
   branches:
     include:
+      - main
       - environment
   paths:
     include:
@@ -49,7 +50,7 @@ stages:
             echo "--- Running Terragrunt Destroy ---"
             terragrunt run-all destroy -auto-approve
           displayName: 'Terragrunt Destroy'
-          workingDirectory: '$(terragruntDirectory)'
+          workingDirectory: '$(ec2terragruntDirectory)'
 
 - stage: WriteDestroyFlag
   displayName: 'Write Destroy Flag'
@@ -91,7 +92,7 @@ stages:
 
     - script: |
         echo "--- Running terragrunt plan-all ---"
-        cd $(terragruntDirectory)
+        cd $(ec2terragruntDirectory)
         terragrunt run-all plan     #In your Azure DevOps pipeline YAML, the Terragrunt init and plan are 
         handled implicitly by the terragrunt run-all plan command under the TerragruntPlan stage.
       displayName: 'Terragrunt Plan All'
@@ -110,7 +111,7 @@ stages:
             echo "--- Running Terragrunt Apply ---"
             terragrunt run-all apply -auto-approve
           displayName: 'Terragrunt Apply'
-          workingDirectory: '$(terragruntDirectory)'
+          workingDirectory: '$(ec2terragruntDirectory)'
 
         - script: |
             echo "--- Capturing EC2 Outputs ---"
@@ -122,7 +123,7 @@ stages:
             echo "$EC2_INSTANCE_ID" > $(Pipeline.Workspace)/ec2_connection_info/instance_id.txt
             echo "EC2 connection info saved"
           displayName: 'Capture EC2 Outputs'
-          workingDirectory: '$(terragruntDirectory)'
+          workingDirectory: '$(ec2terragruntDirectory)'
 
         - publish: $(Pipeline.Workspace)/ec2_connection_info
           artifact: EC2ConnectionInfo
