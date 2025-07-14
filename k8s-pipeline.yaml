@@ -6,7 +6,7 @@ trigger:
       - environment
   paths:
     include:
-      - app/*
+      - app/*git add
 
 pool:
   vmImage: 'Agent-pool'
