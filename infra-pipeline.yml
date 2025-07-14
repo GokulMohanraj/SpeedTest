@@ -9,7 +9,7 @@ trigger:
       - environment/*
 
 pool:
-  name: 'Agent-pool'
+  name: 'Agent pool'
 
 variables:
   awsRegion: 'ap-south-1'

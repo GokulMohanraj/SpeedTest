@@ -10,7 +10,7 @@ trigger:
       - app/*git add
 
 pool:
-  vmImage: 'Agent-pool'
+  name: 'Agent pool'
 
 variables:
   DockerConnection: 'DockerHubConnection'
