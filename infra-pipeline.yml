@@ -92,10 +92,10 @@ stages:
     - script: |
         echo "--- Running terragrunt plan-all ---"
         cd $(ec2terragruntDirectory)
-        terragrunt run-all plan     #In your Azure DevOps pipeline YAML, the Terragrunt init and plan are 
-        handled implicitly by the terragrunt run-all plan command under the TerragruntPlan stage.
+        terragrunt run-all plan     
       displayName: 'Terragrunt Plan All'
-
+      #In your Azure DevOps pipeline YAML, the Terragrunt init and plan are 
+        #handled implicitly by the terragrunt run-all plan command under the TerragruntPlan stage.
     
 - stage: TerragruntApply
   displayName: 'Terragrunt Apply'
