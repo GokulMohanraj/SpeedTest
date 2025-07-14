@@ -2,11 +2,10 @@ name: InfraPipeline_Terragrunt_$(Date:yyyyMMdd)$(Rev:rr)
 trigger:
   branches:
     include:
-      
-      - environment
+      - environments
   paths:
     include:
-      - environment/*
+      - environments/*
 
 pool:
   name: 'Agent pool'
