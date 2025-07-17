@@ -73,7 +73,6 @@ stages:
   - stage: TerragruntApply
     displayName: 'Terragrunt Apply'
     dependsOn: TerragruntPlan
-    condition: succeeded()
     jobs:
       - job: ApplyInfra
         steps:
