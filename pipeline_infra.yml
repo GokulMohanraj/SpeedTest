@@ -73,7 +73,7 @@ stages:
   - stage: TerragruntApply
     displayName: 'Terragrunt Apply'
     dependsOn: TerragruntPlan
-    condition: and(succeeded(), ne(variables['destroyResources'], 'true'))
+    condition: succeeded()
     jobs:
       - job: ApplyInfra
         steps:
