@@ -31,7 +31,7 @@ stages:
                 - terragrunt
           - script: |
               cd $(terraformDirectory)
-              terragrunt run-all destroy -auto-approve
+              terragrunt destroy --all -auto-approve
             displayName: 'Terragrunt Destroy'
 
   - stage: WriteDestroyFlag
@@ -61,7 +61,7 @@ stages:
                 - terragrunt
           - script: |
               cd $(terraformDirectory)
-              terragrunt run-all plan
+              terragrunt plan --all
             displayName: 'Terragrunt Plan'
 
   - stage: TerragruntApply
@@ -79,7 +79,7 @@ stages:
                 - terragrunt
           - script: |
               cd $(terraformDirectory)
-              terragrunt run-all apply -auto-approve
+              terragrunt apply --all -auto-approve
             displayName: 'Terragrunt Apply'
           - script: |
               cd $(terraformDirectory)/ec2
