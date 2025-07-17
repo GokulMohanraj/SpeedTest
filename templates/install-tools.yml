@@ -1,15 +1,15 @@
-paramaters:
+parameters:
   tools: []
 
 steps:
-  - ${{ if contains(paramaters.tools, 'terraform')}}:
+  - ${{ if contains(parameters.tools, 'terraform')}}:
     - task: TerraformInstaller@0
       inputs:
         terraformVersion: 'latest'
       displayName: 'Install Terraform'
 
 steps:
-  -${{ if contains(paramaters.tools, 'terragrunt')}}:
+  -${{ if contains(parameters.tools, 'terragrunt')}}:
     - script: |
         echo "Installing Terragrunt..."
         sudo curl -L https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64 -o /usr/local/bin/terragrunt
