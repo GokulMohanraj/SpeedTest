@@ -1,0 +1,13 @@
+trigger: none
+
+pool:
+  name: 'Agent pool'
+
+jobs:
+- job: TestInstall
+  steps:
+    - template: templates/install-tools.yml
+      parameters:
+        tools:
+          - terraform
+          - terragrunt
