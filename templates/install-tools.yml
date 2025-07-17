@@ -3,7 +3,7 @@ parameters:
 
 steps:
   - task: TerraformInstaller@0
-    condition: contains('${{ parameters.tools }}', 'terraform')
+    condition: and(succeeded(), contains(parameters.tools, 'terraform'))
     inputs:
       terraformVersion: 'latest'
     displayName: 'Install Terraform'
@@ -13,5 +13,5 @@ steps:
       sudo curl -L https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64 -o /usr/local/bin/terragrunt
       sudo chmod +x /usr/local/bin/terragrunt
       terragrunt --version
-    condition: contains('${{ parameters.tools }}', 'terragrunt')
+    condition: and(succeeded(), contains(parameters.tools, 'terragrunt'))
     displayName: 'Install Terragrunt'
