@@ -93,7 +93,7 @@ stages:
             displayName: 'Verify AWS Connectivity and IAM'
           - script: |
               cd $(terraformDirectory)
-              terragrunt apply "tfplan" -auto-approve
+              terragrunt apply -auto-approve
             displayName: 'Terragrunt Apply'
           - script: |
               cd $(terraformDirectory)/ec2
