@@ -67,7 +67,7 @@ stages:
                 - terragrunt
           - script: |
               cd $(terraformDirectory)
-              terragrunt plan --all
+              terragrunt plan --all -out=tfplan
             displayName: 'Terragrunt Plan'
 
   - stage: TerragruntApply
