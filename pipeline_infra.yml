@@ -92,9 +92,8 @@ stages:
               aws dynamodb describe-table --table-name terraform-locks # Tests DynamoDB permissions
             displayName: 'Verify AWS Connectivity and IAM'
           - script: |
-              export TF_LOG=DEBUG
-              cd $(terraformDirectory)/vpc
-              terragrunt apply -auto-approve
+              cd $(terraformDirectory)
+              terragrunt apply "tfplan" -auto-approve
             displayName: 'Terragrunt Apply'
           - script: |
               cd $(terraformDirectory)/ec2
