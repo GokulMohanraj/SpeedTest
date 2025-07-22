@@ -1,12 +1,6 @@
 data "aws_vpc" "default" {
   default = true
 }
-
-terraform {
-  backend "s3" {}
-}
-
-
 resource "aws_security_group" "speedtest_sg" {
   name        = var.security_group_name
   description = "Security group for Speedtest EC2 instance"
