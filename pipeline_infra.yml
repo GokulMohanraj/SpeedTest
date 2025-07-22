@@ -83,6 +83,16 @@ stages:
                 - terraform 
                 - terragrunt
           - script: |
+              echo "Checking AWS CLI connectivity..."
+              aws configure list # Shows configured credentials/method
+              aws sts get-caller-identity # Confirms who you're authenticated as
+              echo "Listing S3 bucket contents..."
+              aws s3 ls s3://bucket-for-speedtest/ # Tests S3 permissions
+              echo "Describing DynamoDB table..."
+              aws dynamodb describe-table --table-name terraform-locks # Tests DynamoDB permissions
+            displayName: 'Verify AWS Connectivity and IAM'
+          - script: |
+              export TF_LOG=DEBUG
               cd $(terraformDirectory)
               terragrunt apply --all -auto-approve
             displayName: 'Terragrunt Apply'
